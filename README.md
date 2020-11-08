@@ -30,3 +30,11 @@ Please make sure to update tests as appropriate.
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
+
+##Name
+Self name explaining
+
+##Description
+a list of feature
+##Project status
+#authors and acknowledgement
