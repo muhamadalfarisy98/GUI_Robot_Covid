@@ -1,7 +1,7 @@
 # GUIRobotCovid
 Implementasi GUI PyQt5 dan RosTopic
 
-## Installation
+## Installation Libraries
 
 Install PyQt5 and QtDesigner, it should work on Python 2.7 or 3.x series
 
@@ -23,7 +23,7 @@ cd /usr/lib/x86_64-linux-gnu/qt5/bin/
 pyuic5 -x your_file.ui -o your_python_file.py
 ```
 
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
+## Reference
+[Qt Python](https://pythonbasics.org/qt-designer-python/)
 
 
