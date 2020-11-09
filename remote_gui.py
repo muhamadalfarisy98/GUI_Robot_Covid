@@ -3,7 +3,6 @@
 #https://career.catapa.com/GDPLabs/jobs
 # Form implementation generated from reading ui file 'MainUI.ui'
 # Author: Muhamad Alfarisy (Selasa, 3 November 2020)
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QDateTime, QDate,QTime,Qt
 from PyQt5.QtWidgets import *
@@ -12,13 +11,20 @@ import socket
 import json
 import os
 import rospy
-from std_msgs.msg import *
+from std_msgs.msg import Int32, Float32, String, Bool,UInt8
 from rospkg import RosPack
+import time
+from std_srvs.srv import Trigger
+from geometry_msgs.msg import Pose
+from service_robot_msgs.msg import command
 
 #variable global
 rows=0
 stringFile1=''
 stringFile2=''
+num=0
+flag=9
+
 class Ui_RemoteUI(object):
     def setupUi(self, RemoteUI):
         RemoteUI.setObjectName("RemoteUI")
@@ -28,11 +34,11 @@ class Ui_RemoteUI(object):
         self.tabWidget.setObjectName("tabWidget")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
-        self.refreshButton = QtWidgets.QPushButton(self.tab_2)
-        self.refreshButton.setGeometry(QtCore.QRect(210, 330, 141, 41))
-        self.refreshButton.setObjectName("refreshButton")
+        self.refreshPayloadButton = QtWidgets.QPushButton(self.tab_2)
+        self.refreshPayloadButton.setGeometry(QtCore.QRect(350, 280, 181, 41))
+        self.refreshPayloadButton.setObjectName("refreshPayloadButton")
         self.tableWidgetRobotStatus = QtWidgets.QTableWidget(self.tab_2)
-        self.tableWidgetRobotStatus.setGeometry(QtCore.QRect(0, 80, 260, 151))
+        self.tableWidgetRobotStatus.setGeometry(QtCore.QRect(0, 60, 260, 191))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
@@ -41,13 +47,15 @@ class Ui_RemoteUI(object):
         self.tableWidgetRobotStatus.setMinimumSize(QtCore.QSize(260, 0))
         self.tableWidgetRobotStatus.setObjectName("tableWidgetRobotStatus")
         self.tableWidgetRobotStatus.setColumnCount(1)
-        self.tableWidgetRobotStatus.setRowCount(3)
+        self.tableWidgetRobotStatus.setRowCount(4)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidgetRobotStatus.setVerticalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidgetRobotStatus.setVerticalHeaderItem(1, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidgetRobotStatus.setVerticalHeaderItem(2, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tableWidgetRobotStatus.setVerticalHeaderItem(3, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidgetRobotStatus.setHorizontalHeaderItem(0, item)
         self.tableWidgetRobotStatus.horizontalHeader().setDefaultSectionSize(150)
@@ -60,6 +68,7 @@ class Ui_RemoteUI(object):
         self.tableWidgetPayloadStatus.setObjectName("tableWidgetPayloadStatus")
         self.tableWidgetPayloadStatus.setColumnCount(4)
         self.tableWidgetPayloadStatus.setRowCount(0)
+        """TAG"""
         item = QtWidgets.QTableWidgetItem()
         self.tableWidgetPayloadStatus.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -82,6 +91,9 @@ class Ui_RemoteUI(object):
         font.setPointSize(14)
         self.label_9.setFont(font)
         self.label_9.setObjectName("label_9")
+        self.refreshRobotButton = QtWidgets.QPushButton(self.tab_2)
+        self.refreshRobotButton.setGeometry(QtCore.QRect(40, 280, 181, 41))
+        self.refreshRobotButton.setObjectName("refreshRobotButton")
         self.tabWidget.addTab(self.tab_2, "")
         self.tab_3 = QtWidgets.QWidget()
         self.tab_3.setObjectName("tab_3")
@@ -117,132 +129,166 @@ class Ui_RemoteUI(object):
         self.refreshModeButton.setGeometry(QtCore.QRect(100, 320, 131, 41))
         self.refreshModeButton.setObjectName("refreshModeButton")
         self.tabWidget.addTab(self.tab_3, "")
+
+
         #Widget connection
         self.refreshModeButton.clicked.connect(self.refreshModeAction)
         self.changeButton.clicked.connect(self.changeAction)
         self.navButton.clicked.connect(self.navAction)
         self.teleopButton.clicked.connect(self.teleopAction)
-        self.refreshButton.clicked.connect(self.refreshAction)
+        self.refreshPayloadButton.clicked.connect(self.refreshActionPayload)
+        self.refreshRobotButton.clicked.connect(self.refreshActionRobot)
         #MAIN WINDOW CMD
         self.retranslateUi(RemoteUI)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(RemoteUI)
-
 
     """PUSHBUTTON ACTION"""
     def teleopAction(self):
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleop Mode'))
+        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
         os.system('roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch &')
     def navAction(self):
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigasi Mode'))
-
+        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
+        #ngirim data sama Node commander
     def changeAction(self):
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('')) 
-        
-    def refreshModeAction(self):
-        #ngambil yang harus dibaca
-        print('')
-        a=str(self.tableWidgetCekMode.item(0,0).text())
-        print(a)
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(a)) 
-    
-    def refreshAction(self):
-        #ngeload atau subscribe topic dari robot gui dan node commander
-        self.tableWidgetPayloadStatus.setRowCount(2)
-        #----PayLoad Type handling
-        #subscribe topic dari robotgui yang tipe payload
-        # payLoadReturn=self.comboBoxPayload.currentText()
-        # payLoadReturn=payloadtype
-        payLoadReturn='Drugs'
-        self.tableWidgetRobotStatus.setItem(2,0,QtWidgets.QTableWidgetItem(payLoadReturn))
+        #Terminate aksi yang sedang berjalan
+        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(''))
 
+    def refreshModeAction(self):
+        #Mengambil info atau subscribe topik dari action yang sedang berjalan
+        # rospy.Subscriber('flag_action',UInt8,self.callbackFlagAction)
+        # print(flag)
+        # if flag==0:
+        #     aksi='Idle'
+        # elif flag==1:
+        #     aksi='Navigation Mode'
+        # elif flag==2:
+        #     aksi='Teleoperation Mode'
+        pesan="""
+        Mode Robot:
+            0: Idle action
+            1: Navigation action
+            2: Teleoperation action
+            """
+        print(pesan)
+        # print('aksi robot',aksi)
+        # self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(aksi))
+        a=str(self.tableWidgetCekMode.item(0,0).text())
+        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(a))
+        if a=='':
+            a='Idle'
+        print('On going action : '+a)
+
+    # def callbackFlagAction(self,data):
+    #     global flag
+    #     flag=data.data
+
+
+    def refreshActionPayload(self):
+        #rate=rospy.Rate(10)
+        print('baca JSON ')
+        rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
+        #rate.sleep()
+    def refreshActionRobot(self):
+        #ngeload atau subscribe topic dari robot gui dan node commander
         #----Power batre handling
         #subscribe nilai power
         powerValue=str(80)
         self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
-
          #----Position Handling
         #subscribe current position
         positionValue=str('LSKK')
         self.tableWidgetRobotStatus.setItem(1,0,QtWidgets.QTableWidgetItem(positionValue))
-
         #ROS PARAM SUBSCRIBER
-        rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
-        rospy.Subscriber('status_topic',Bool,self.callbackStatus)
-        rospy.Subscriber('payloadtype',String,self.callbackPayloadtype)
-        rospy.Subscriber('numitems',String,self.callbackNumitems)
-        rospy.Subscriber('Json_NoLaci',String,self.callbackJsonNoLaci)
-        rospy.Subscriber('Json_Tujuan',String,self.callbackJsonTujuan)
-        # rospy.spin()
+        # rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
+        # rospy.Subscriber('status_topic',Bool,self.callbackStatus)
+        #----PayLoad Type handlingse
+        # global tes
+        # while tes==False:
+        #     print('num awal',num)
+        rospy.Subscriber('Items_topic',String,self.callbackPayloadtype)
+        #     if num==0:
+        #         continue
+        #     tes=True
+        #     print('num akhir',num)
+        # time.sleep(0.1)
+        #print('num akhir',num)
+
     """CALL-BACK FUNCTION"""
-    def callbackJsonNoLaci(self,data):
+    def callbackJsonTopic(self,data):
         global stringFile1
+        z=str(self.tableWidgetRobotStatus.item(3,0).text())
+        z_int=int(z)
+        print('num di json',z_int)
         stringFile1=data.data
+        #parsing jadi list
         my_new_list1=stringFile1.split()
+        print('my new list parsing',my_new_list1)
         iter=0
-        
-        while iter<2 :
-            self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+        while iter<z_int*2 :
+            self.tableWidgetPayloadStatus.setItem(iter,2,QtWidgets.QTableWidgetItem(str('Pending')))
+            if iter<z_int:
+                self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+                print(my_new_list1[iter])
+                iter+=1
+                continue
+            self.tableWidgetPayloadStatus.setItem(iter-z_int,1,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
             print(my_new_list1[iter])
             iter+=1
 
-    def callbackJsonTujuan(self,data):
-        global stringFile2
-        stringFile2=data.data
-        my_new_list2=stringFile2.split()
-        iter=0
-        
-        while iter<2 :
-            self.tableWidgetPayloadStatus.setItem(iter,1,QtWidgets.QTableWidgetItem(str(my_new_list2[iter])))
-            print(my_new_list2[iter])
-            iter+=1
-
-    def callbackPower(self,data):
-        global powerValue  
-        powerValue=data.data
-        str_pow=str(powerValue)
-        self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(str_pow+"%"))
+    # def callbackPower(self,data):
+    #     global powerValue
+    #     powerValue=data.data
+    #     str_pow=str(powerValue)
+    #     self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(str_pow+"%"))
 
     def callbackPayloadtype(self,data):
-        global typePayload
-        typePayload=data.data
-        self.tableWidgetRobotStatus.setItem(2,0,QtWidgets.QTableWidgetItem(typePayload))
+        global stringFile2
+        global num
+        #array[0]: byk items, array[1]:Jenis payload
+        stringFile2=data.data
+        print('subscribe string',stringFile2)
+        my_new_list2=stringFile2.split()
+        print('subscribe list',my_new_list2)
+        num=my_new_list2[0]
+        self.tableWidgetRobotStatus.setItem(3,0,QtWidgets.QTableWidgetItem(str(num) ))
+        print('num callbacknya ',num)
+        self.tableWidgetRobotStatus.setItem(2,0,QtWidgets.QTableWidgetItem(str(my_new_list2[1])))
+        print(my_new_list2)
+        self.tableWidgetPayloadStatus.setRowCount(int(num))
 
-    def callbackNumitems(self,data):
-        global numitems_data
-        numitems_data=data.data
-        self.tableWidgetPayloadStatus.setRowCount(int(numitems_data))
-
-    def callbackStatus(self,data):   
-        global statusRobot
-        status1=data.data 
-        global rows
-        #pending dan ongoing aku sendiri
-        #setiap nerima ini aku konversiin sendiri waktu terima time stampnya
-        Time=QTime.currentTime()
-        Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-        self.tableWidgetPayloadStatus.setItem(rows,3,QtWidgets.QTableWidgetItem(Timestr))
-        if status1== True:
-            statusRobot='Done'
-            self.tableWidgetPayloadStatus.setItem(rows,2,QtWidgets.QTableWidgetItem(statusRobot))
-        else:
-            statusRobot='Failed'
-            self.tableWidgetPayloadStatus.setItem(rows,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-        rows=rows+1
-
+    #
+    # def callbackStatus(self,data):
+    #     global statusRobot
+    #     status1=data.data
+    #     global rows
+    #     #pending dan ongoing aku sendiri
+    #     #setiap nerima ini aku konversiin sendiri waktu terima time stampnya
+    #     Time=QTime.currentTime()
+    #     Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+    #     self.tableWidgetPayloadStatus.setItem(rows,3,QtWidgets.QTableWidgetItem(Timestr))
+    #     if status1== True:
+    #         statusRobot='Done'
+    #         self.tableWidgetPayloadStatus.setItem(rows,2,QtWidgets.QTableWidgetItem(statusRobot))
+    #     else:
+    #         statusRobot='Failed'
+    #         self.tableWidgetPayloadStatus.setItem(rows,2,QtWidgets.QTableWidgetItem(statusRobot))
+    #     rows=rows+1
 
     def retranslateUi(self, RemoteUI):
         _translate = QtCore.QCoreApplication.translate
         RemoteUI.setWindowTitle(_translate("RemoteUI", "RemoteUI"))
         self.tabWidget.setToolTip(_translate("RemoteUI", "<html><head/><body><p><br/></p></body></html>"))
-        self.refreshButton.setToolTip(_translate("RemoteUI", "<html><head/><body><p>Update current changes</p></body></html>"))
-        self.refreshButton.setText(_translate("RemoteUI", "Refresh"))
+        self.refreshPayloadButton.setToolTip(_translate("RemoteUI", "<html><head/><body><p>Update current changes</p></body></html>"))
+        self.refreshPayloadButton.setText(_translate("RemoteUI", "Refresh Payload Status"))
         item = self.tableWidgetRobotStatus.verticalHeaderItem(0)
         item.setText(_translate("RemoteUI", "Power"))
         item = self.tableWidgetRobotStatus.verticalHeaderItem(1)
         item.setText(_translate("RemoteUI", "Position"))
         item = self.tableWidgetRobotStatus.verticalHeaderItem(2)
         item.setText(_translate("RemoteUI", "Payload Type"))
+        item = self.tableWidgetRobotStatus.verticalHeaderItem(3)
+        item.setText(_translate("RemoteUI", "Number of Items"))
         item = self.tableWidgetRobotStatus.horizontalHeaderItem(0)
         item.setText(_translate("RemoteUI", "Value"))
         item = self.tableWidgetPayloadStatus.horizontalHeaderItem(0)
@@ -255,6 +301,7 @@ class Ui_RemoteUI(object):
         item.setText(_translate("RemoteUI", "Timestamp"))
         self.label_8.setText(_translate("RemoteUI", "Robot Status"))
         self.label_9.setText(_translate("RemoteUI", "Payload Status"))
+        self.refreshRobotButton.setText(_translate("RemoteUI", "Refresh Robot Status"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("RemoteUI", "Status Monitor"))
         self.label_3.setText(_translate("RemoteUI", "Remote Mode :"))
         self.navButton.setToolTip(_translate("RemoteUI", "<html><head/><body><p>Mode Navigasi</p><p><br/></p></body></html>"))
@@ -273,11 +320,14 @@ class Ui_RemoteUI(object):
         self.tableWidgetPayloadStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetCekMode.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #INCASE MAU RUN
-        os.system('killall roscore &')
-        os.system('roscore &')
-        #INISIALISASI NODE REMOTE GUI
-        rospy.init_node('remoteui',anonymous=False)
+        #INCASE MAU RUN SELf
+        # os.system('killall roscore &')
+        # os.system('roscore &')
+        """INISIALISASI NODE REMOTE GUI"""
+        rospy.init_node('remote_ui',anonymous=False)
+        rospy.Subscriber('items_topic',String,self.callbackPayloadtype)
+        rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
+
 #MAIN PROGRAM
 if __name__ == "__main__":
     import sys
@@ -287,4 +337,3 @@ if __name__ == "__main__":
     ui.setupUi(RemoteUI)
     RemoteUI.show()
     sys.exit(app.exec_())
-
