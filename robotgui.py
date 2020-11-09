@@ -12,10 +12,15 @@ import socket
 import json
 import os
 import rospy
-from std_msgs.msg import Int32, Float32, String, Bool
+from std_msgs.msg import Int32, Float32, String, Bool,UInt8
 from rospkg import RosPack
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
+from service_robot_msgs.msg import command #Pos dan Uint8
+
+#Global variable
+listTostr1=''
+listTostr2=''
 
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
@@ -184,37 +189,68 @@ class Ui_RobotGUI(object):
      ##############################fungsi push button################
 
     def initAction(self):
-        #inisialisasi robot bring up 
+        """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
-
+        #os.sytem('roslaunch covid_commander_node covid_commander.launch  &')
+        #MINTA DR DIMAS
     def startAction(self):
+        pubFlag=rospy.Publisher('flag_action',UInt8,queue_size=10)
+        pubFlag.publish(1) # indikasi navigasi
+        #mengirim ke node commander awal (trigger point)
         self.initKirim()
-        sp_box_int=int(self.spinBoxNumItems.text())
+        sp_box_int=int(self.spinBoxNumItems.text()) #baca berapa banyak brg yang harus dikirim
         count=1
-        pubNoLaci=rospy.Publisher('NoLaci',String,queue_size=10)
-        pubPosisi=rospy.Publisher('PosisiRobot',String,queue_size=10) #Pose - uint8
+        pubCommander=rospy.Publisher('pub_commander',command,queue_size=10)
+        """"""
         self.refreshAction()
+        """"""
         while count<sp_box_int  :
+            #KUDU SUBSCIBE UPDATE STATUS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #NERIMA OPERAN DR DIMAS
             if (self.tableWidgetPayloadStatus.item(count-1,2).text()=='Done') or (self.tableWidgetPayloadStatus.item(count-1,2).text()=='Fail'):
-                pubNoLaci.publish(self.tableWidgetPayloadStatus.item(count,0).text())
-                pubPosisi.publish(self.tableWidgetPayloadStatus.item(count,1).text()) #vuat file json koordinat sama no laci
-                count=count+1
+                posisi=self.tableWidgetPayloadStatus.item(count,1).text()
+                laci=self.tableWidgetPayloadStatus.item(count,0).text()
+                #PARSING POSISI TO COORDINATE HARDCODE-static
+                if  posisi == 'LSKK':
+                    kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
+                elif posisi == 'Mekanikal':
+                    kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
+                elif posisi == 'TA':
+                    kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
+                p=Pose()
+                p.position.x=kordinat[0]
+                p.position.y=kordinat[1]
+                p.position.z=kordinat[2]
+                p.orientation.x=kordinat[3]
+                p.orientation.y=kordinat[4]
+                p.orientation.z=kordinat[5]
+                p.orientation.w=kordinat[6]
+                #PUBLISH NODE COMMANDER
+                custom=command()
+                custom.coordinate=p
+                custom.num=laci
+                pubCommander.publish(custom)
+                count+=1
 
     def stopAction(self):
         print("flag 2")    
+        pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
+        pubFlag.publish(0)
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
-       #eksperimen service
-        # rospy.wait_for_service('cancel_service')
-        # try:
-        #     xyz=rospy.ServiceProxy('cancel_service', Trigger)
-        #     final_val=xyz()
-        # except rospy.ServiceException as e:
-        #     print(e)
+        #eksperimen service
+        rospy.wait_for_service('cancel_task')
+        try:
+            xyz=rospy.ServiceProxy('cancel_task', Trigger)
+            final_val=xyz()
+            print(final_val.success)
+        except rospy.ServiceException as e:
+            print(e)
+        
         # if final_val.success=True :
         # pubStop=rospy.Publisher('stop_condition',String,queue_size=10)
         # pubStop.publish('Stop')
         # kudu ngasih perintah terminasi
-        #ros service cancel
+        # ros service cancel
 
     def refreshAction(self):
   
@@ -226,6 +262,7 @@ class Ui_RobotGUI(object):
         #----PayLoad Type handling
         payLoadReturn=self.comboBoxPayload.currentText()
         self.tableWidgetRobotStatus.setItem(3,0,QtWidgets.QTableWidgetItem(payLoadReturn))
+        """PUBLISH HARUSNYA tipe payload dan number items"""
 
         #----Power batre handling
         #subscribe nilai power
@@ -239,26 +276,31 @@ class Ui_RobotGUI(object):
 
         """PAYLOAD STATUS"""
         sp_box_int=int(self.spinBoxNumItems.text())
+        """PUBLISH HARUSNYA tipe payload dan number items
+        """
+
         #---- time handling
-        Time=QTime.currentTime()
-        Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+        # Time=QTime.currentTime()
+        # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+        """WAKTU PARSING"""
         #membuat banyak dimensiinya si diwgetTabel
         self.tableWidgetPayloadStatus.setRowCount(sp_box_int)
         #waktu nya kudu diparsing dulu  pokoknya
-        for row in range(sp_box_int) :
-            self.tableWidgetPayloadStatus.setItem(row,3,QtWidgets.QTableWidgetItem(Timestr))
+        # for row in range(sp_box_int) :
+        #     self.tableWidgetPayloadStatus.setItem(row,3,QtWidgets.QTableWidgetItem(Timestr))
 
         #---- status handling
         """
             status nya ada = {Done, ongoing,pending}
             nanti subscire dari status tanda MCU
+            inisialisasi semuanya berupa pending
         """
         status_str=str("Pending")
         for row in range(sp_box_int):
             self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
-       
+        #Baca File JSON untuk parsing
         jsonfile_PayloadParam='payload.json'
-        filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam)
+        filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
         with open(filename_PayloadParam,'r') as f:
             PayloadParam=json.load(f)
                 #make sure json file benar
@@ -267,20 +309,40 @@ class Ui_RobotGUI(object):
             self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
             self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
             baris=baris+1
+        """LIST TO STRING CONVERSION untuk parsing ke remote gui"""
+        # my_list1=[]
+        # my_list2=[]
+        # for p in PayloadParam['kirim']:
+        #     print('No Laci',p['No_laci'])
+        #     print('Tujuan',p['Tujuan'])
+        #     my_list1.append(p['No_laci'])
+        #     my_list2.append(p['Tujuan'])
+        # for elemen in my_list2:
+        #     my_list1.append(elemen)
+        # print(my_list1)
+        
+        # # konversi list to string buat di kirim ke ros param
+        # global listTostr1,listTostr2
+        # listTostr1= ' '.join([str(elem) for elem in my_list1]) 
+        # print(listTostr1)
 
+        # pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
+        # pubJsonTopic.publish(listTostr1)
 
+        """boundaries"""
         #ROS PARAM SUBSCRIBER
-        rospy.Subscriber('publishCMD',String,self.callbackCMD)
+        # rospy.Subscriber('publishCMD',String,self.callbackCMD)
         rospy.Subscriber('status_topic',Bool,self.callbackStatus)
-        rospy.Subscriber('voltage_bat',Bool,self.callbackPower)
+        # rospy.Subscriber('voltage_bat',Bool,self.callbackPower)
+
 
     """CALL-BACK FUNCTION"""
-    def callbackCMD(self,data):
-        global setCMD
-        setCMD=data.data
-        print(setCMD)
-        self.tableWidgetPayloadStatus.setItem(0,2,QtWidgets.QTableWidgetItem(setCMD)) 
-        #print(setCMD)
+    # def callbackCMD(self,data):
+    #     global setCMD
+    #     setCMD=data.data
+    #     print(setCMD)
+    #     self.tableWidgetPayloadStatus.setItem(0,2,QtWidgets.QTableWidgetItem(setCMD)) 
+    #     #print(setCMD)
 
     def callbackStatus(self,data):   
         global statusRobot
@@ -296,32 +358,32 @@ class Ui_RobotGUI(object):
             self.tableWidgetPayloadStatus.setItem(0,2,QtWidgets.QTableWidgetItem(statusRobot)) 
 
 
-    def callbackPower(self,data):
-        global powerValue  
-        powerValue=data.data
-        self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
+    # def callbackPower(self,data):
+    #     global powerValue  
+    #     powerValue=data.data
+    #     self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
     """CALL-BACK FUNCTION"""
 
 
     def addAction(self):
-        #comboBox Read
-        cb_payload=self.comboBoxPayload.currentText()
-        print(cb_payload)
-
         #SpinBox
         sp_box=self.spinBoxNumItems.text()
         print(sp_box) #ntar bakal dipakai buat max index rows
         self.tableWidgetTujuan.setRowCount(int(sp_box))
+                ########################################
+        cb_payload=self.comboBoxPayload.currentText()
+        print(cb_payload)
 
         ###############################ROS PARAM KE REMOTE GUI
-        pubPayloadType=rospy.Publisher('payloadtype',String,queue_size=10)
-        pubNumItems=rospy.Publisher('numitems',String,queue_size=10)
-
-        """"PUBLISHER ROS """
-        #Nanti dikirim ke remote GUI ROS
-        pubNumItems.publish(sp_box)
-        pubPayloadType.publish(cb_payload)
-
+        my_items=[]
+        my_items.append(sp_box)
+        my_items.append(cb_payload)
+        listTostr3= ' '.join([str(elem) for elem in my_items]) 
+        print('isi list 3', listTostr3)
+        pubItems=rospy.Publisher('items_topic',String,queue_size=10)
+        pubItems.publish(listTostr3)
+        ###############################ROS PARAM KE REMOTE GUI
+     
 
     def saveAction(self):
         #Membaca input dari TableWidgetTujuan
@@ -335,32 +397,47 @@ class Ui_RobotGUI(object):
         num_rows, num_cols = self.tableWidgetTujuan.rowCount(), self.tableWidgetTujuan.columnCount()
         for row in range(num_rows):
             my_dict={}
-            # gas=self.tableWidgetT        
-            # print(gas)
             my_dict['No_laci']=self.tableWidgetTujuan.item(row, 0).text()
-            #a=self.tableWidgetTujuan.item(row, 0).text()
-            #print(a)
             my_dict['Tujuan']=self.tableWidgetTujuan.item(row, 1).text()
-            #print(self.tableWidgetTujuan.item(row, 1).text())
-            # my_dict1.update(my_dict2)
             my_list.append(my_dict)
             print(my_list)
-            #print(my_list, row)
         PayloadParam['kirim']=my_list
         
         """pengisian input"""
         with open (filename_PayloadParam,'w') as f:
             json.dump(PayloadParam,f)
+        
 
+
+        with open(filename_PayloadParam,'r') as f:
+            PayloadParam=json.load(f)
+                #make sure json file benar
+        """LIST TO STRING CONVERSION untuk parsing ke remote gui"""
+        my_list1=[]
+        my_list2=[]
+        for p in PayloadParam['kirim']:
+            print('No Laci',p['No_laci'])
+            print('Tujuan',p['Tujuan'])
+            my_list1.append(p['No_laci'])
+            my_list2.append(p['Tujuan'])
+        for elemen in my_list2:
+            my_list1.append(elemen)
+        print(my_list1)
+        
+        # konversi list to string buat di kirim ke ros param
+        global listTostr1,listTostr2
+        listTostr1= ' '.join([str(elem) for elem in my_list1]) 
+        print(listTostr1)
+
+        pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
+        pubJsonTopic.publish(listTostr1)
 
     def initKirim(self):
-        kordinat=[]
         """ROS PARAMETER PENGIRIMAN STATUS DAN LOKASI ATAUPUN KOORDINAT"""
-        pubNoLaci=rospy.Publisher('NoLaci',String,queue_size=10)
-        pubPose=rospy.Publisher('pose',Pose,queue_size=10)
-        # pubPosisi=rospy.Publisher('PosisiRobot',String,queue_size=10)
+        pubCommander=rospy.Publisher('pub_commander',command,queue_size=10)
         """ROS PARAMETER PENGIRIMAN STATUS DAN LOKASI ATAUPUN KOORDINAT"""
         posisi=self.tableWidgetPayloadStatus.item(0,1).text()
+        laci=self.tableWidgetPayloadStatus.item(0,0).text()
         #PARSING POSISI TO COORDINATE HARDCODE-static
         if  posisi == 'LSKK':
             kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
@@ -376,9 +453,11 @@ class Ui_RobotGUI(object):
         p.orientation.y=kordinat[4]
         p.orientation.z=kordinat[5]
         p.orientation.w=kordinat[6]
-
-        pubPose.publish(p)
-        pubNoLaci.publish(self.tableWidgetPayloadStatus.item(0,0).text())
+        #PUBLISH NODE COMMANDER
+        custom=command()
+        custom.coordinate=p
+        custom.num=laci
+        pubCommander.publish(custom)
 
     def retranslateUi(self, RobotGUI):
         _translate = QtCore.QCoreApplication.translate
@@ -434,9 +513,9 @@ class Ui_RobotGUI(object):
         #inisialisasi roscore dan clean up pre process
         os.system('killall roscore &')
         os.system('roscore &')
-        #init node rospy GUI robot
-        rospy.init_node('robotuserinterface',anonymous=False)
-
+        """init node rospy GUI robot"""
+        rospy.init_node('robot_ui',anonymous=False)
+        
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
