@@ -16,6 +16,7 @@ from std_msgs.msg import Int32, Float32, String, Bool
 from rospkg import RosPack
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
+from service_robot_msgs.msg import Command
 
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
@@ -186,6 +187,7 @@ class Ui_RobotGUI(object):
     def initAction(self):
         #inisialisasi robot bring up 
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
+        # os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
 
     def startAction(self):
         self.initKirim()
@@ -201,15 +203,18 @@ class Ui_RobotGUI(object):
                 count=count+1
 
     def stopAction(self):
-        print("flag 2")    
+        print("flag 1")    
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
        #eksperimen service
-        # rospy.wait_for_service('cancel_service')
-        # try:
-        #     xyz=rospy.ServiceProxy('cancel_service', Trigger)
-        #     final_val=xyz()
-        # except rospy.ServiceException as e:
-        #     print(e)
+        rospy.wait_for_service('cancel_task')
+        try:
+            print("flag 2")
+            xyz=rospy.ServiceProxy('cancel_task', Trigger)
+            final_val=xyz()
+            print(final_val.success)
+            print("flag 3")
+        except rospy.ServiceException as e:
+            print(e)
         # if final_val.success=True :
         # pubStop=rospy.Publisher('stop_condition',String,queue_size=10)
         # pubStop.publish('Stop')
@@ -258,7 +263,7 @@ class Ui_RobotGUI(object):
             self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
        
         jsonfile_PayloadParam='payload.json'
-        filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam)
+        filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam)
         with open(filename_PayloadParam,'r') as f:
             PayloadParam=json.load(f)
                 #make sure json file benar
@@ -326,7 +331,7 @@ class Ui_RobotGUI(object):
     def saveAction(self):
         #Membaca input dari TableWidgetTujuan
         jsonfile_PayloadParam='payload.json'
-        filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam)
+        filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam)
         
         PayloadParam={}
         PayloadParam['kirim']=[]
