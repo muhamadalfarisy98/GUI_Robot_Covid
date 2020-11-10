@@ -130,7 +130,6 @@ class Ui_RemoteUI(object):
         self.refreshModeButton.setObjectName("refreshModeButton")
         self.tabWidget.addTab(self.tab_3, "")
 
-
         #Widget connection
         self.refreshModeButton.clicked.connect(self.refreshModeAction)
         self.changeButton.clicked.connect(self.changeAction)
@@ -183,11 +182,10 @@ class Ui_RemoteUI(object):
     #     global flag
     #     flag=data.data
 
-
     def refreshActionPayload(self):
         #rate=rospy.Rate(10)
         print('baca JSON ')
-        rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
+        # rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
         #rate.sleep()
     def refreshActionRobot(self):
         #ngeload atau subscribe topic dari robot gui dan node commander
@@ -202,17 +200,6 @@ class Ui_RemoteUI(object):
         #ROS PARAM SUBSCRIBER
         # rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
         # rospy.Subscriber('status_topic',Bool,self.callbackStatus)
-        #----PayLoad Type handlingse
-        # global tes
-        # while tes==False:
-        #     print('num awal',num)
-        rospy.Subscriber('Items_topic',String,self.callbackPayloadtype)
-        #     if num==0:
-        #         continue
-        #     tes=True
-        #     print('num akhir',num)
-        # time.sleep(0.1)
-        #print('num akhir',num)
 
     """CALL-BACK FUNCTION"""
     def callbackJsonTopic(self,data):
