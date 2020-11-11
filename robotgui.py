@@ -23,7 +23,7 @@ listTostr1=''
 listTostr2=''
 status1=False
 count=1
-tes1=False
+status_finish=False
 statusRobot=''
 remote_nav=1
 stopMode=False
@@ -204,7 +204,7 @@ class Ui_RobotGUI(object):
 
     def startAction(self):
         global count
-        global tes1
+        global status_finish
         global statusRobot
         global kelar
 
@@ -219,9 +219,9 @@ class Ui_RobotGUI(object):
             #cek flag dari callback
             Time=QTime.currentTime()
             Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-            if (tes1==False):
+            if (status_finish==False):
                 continue
-            elif (tes1==True):
+            elif (status_finish==True):
                 #update di table widget statusnya
                 print('sekuens '+ str(count) +' selesai dieksekusi')
                 #assign udpate nilai ke tabel
@@ -256,7 +256,7 @@ class Ui_RobotGUI(object):
                 print('sekuens '+ str(count+1) +' selesai dikirim')
                 count+=1
             time.sleep(0.1)
-            tes1=False
+            status_finish=False
             print(count)
         print('selesai dikerjakan')
         self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
@@ -320,7 +320,7 @@ class Ui_RobotGUI(object):
             if kelar==1:
 
                 print(kelar)
-                jsonfile_PayloadParam='payload.json'
+                jsonfile_PayloadParam='payload_finish.json'
                 filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
                 PayloadParam={}
                 PayloadParam['kirim']=[]
@@ -348,7 +348,35 @@ class Ui_RobotGUI(object):
                 for p in PayloadParam['kirim']:
                     self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
                     self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
+                    self.tableWidgetPayloadStatus.setItem(baris,2,QtWidgets.QTableWidgetItem(p['Status']))
+                    self.tableWidgetPayloadStatus.setItem(baris,3,QtWidgets.QTableWidgetItem(p['Timestamp']))
                     baris=baris+1
+                """PARSING DATA KE REMOTE GUI"""
+                my_list1=[]
+                my_list2=[]
+                my_list3=[]
+                my_list4=[]
+                for p in PayloadParam['kirim']:
+                    print('No Laci',p['No_laci'])
+                    print('Tujuan',p['Tujuan'])
+                    my_list1.append(p['No_laci'])
+                    my_list2.append(p['Tujuan'])
+                    my_list3.append(p['Status'])
+                    my_list4.append(p['Timestamp'])
+                for elemen in my_list2:
+                    my_list1.append(elemen)
+                for elemen in my_list3:
+                    my_list1.append(elemen)
+                for elemen in my_list4:
+                    my_list1.append(elemen)
+                print(my_list1)
+                
+                # konversi list to string buat di kirim ke ros param
+                global listTostr1,listTostr2
+                listTostr1= ' '.join([str(elem) for elem in my_list1]) 
+                print(listTostr1)
+
+                self.pubJsonTopic.publish(listTostr1)
 
             elif kelar==0:
                 print(kelar)
@@ -402,15 +430,14 @@ class Ui_RobotGUI(object):
     """CALL-BACK FUNCTION"""
     def callbackStatus(self,data):   
         global status1 #Bool 1,0
-        
-        global tes1 #flag callback
+        global status_finish #flag callback
         global statusRobot
         status1=data.data
         if status1== True:
             statusRobot='Done'
         else:
             statusRobot='Failed'
-        tes1=True
+        status_finish=True
 
     def callbackPower(self,data):
         global powerValue  
@@ -434,8 +461,7 @@ class Ui_RobotGUI(object):
         my_items.append(cb_payload)
         listTostr3= ' '.join([str(elem) for elem in my_items]) 
         print('isi list 3', listTostr3)
-        pubItems=rospy.Publisher('items_topic',String,queue_size=10)
-        pubItems.publish(listTostr3)
+        self.pubItems.publish(listTostr3)
         ###############################ROS PARAM KE REMOTE GUI
      
 
@@ -484,13 +510,10 @@ class Ui_RobotGUI(object):
         listTostr1= ' '.join([str(elem) for elem in my_list1]) 
         print(listTostr1)
 
-        pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
-        pubJsonTopic.publish(listTostr1)
+        self.pubJsonTopic.publish(listTostr1)
 
     def initKirim(self):
         # kordinat=[]
-        """ROS PARAMETER PENGIRIMAN STATUS DAN LOKASI ATAUPUN KOORDINAT"""
-        # pubCommander=rospy.Publisher('command_topic',command,queue_size=10)
         """ROS PARAMETER PENGIRIMAN STATUS DAN LOKASI ATAUPUN KOORDINAT"""
         posisi=self.tableWidgetPayloadStatus.item(0,1).text()
         laci=int(self.tableWidgetPayloadStatus.item(0,0).text())
@@ -582,6 +605,8 @@ class Ui_RobotGUI(object):
         print('topik subcriber sudah siap')
         self.pubCommander=rospy.Publisher('command_topic',command,queue_size=10)
         self.pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
+        self.pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
+        self.pubItems=rospy.Publisher('items_topic',String,queue_size=10)
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
