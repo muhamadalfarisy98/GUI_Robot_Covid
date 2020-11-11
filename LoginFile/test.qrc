@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>uname1.png</file>
+    <file>pass.png</file>
+    <file>uname.png</file>
+    <file>ros.png</file>
+  </qresource>
+  <qresource prefix="asda">
+    <file>uname.png</file>
+  </qresource>
+</RCC>
