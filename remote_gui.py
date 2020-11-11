@@ -146,12 +146,21 @@ class Ui_RemoteUI(object):
     def teleopAction(self):
         self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
         os.system('roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch &')
+        
     def navAction(self):
         self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
-        #ngirim data sama Node commander
+        self.pubChangeAction.publish(1)
+        #ngirim topic ke robot gui bahwa node navigasi ingin dilakukan pengiriman
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(''))
+        stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
+        if (stop_nav=='Teleoperation Mode'):
+            os.system('rosnode kill teleop_twist_joy &')
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(''))
+        elif (stop_nav=='Navigation Mode'):
+        #   mengirim topik ke robot gui bahwa node navigasi ingin dimatikan
+            self.pubChangeAction.publish(0)
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(''))
 
     def refreshModeAction(self):
         #Mengambil info atau subscribe topik dari action yang sedang berjalan
@@ -183,10 +192,9 @@ class Ui_RemoteUI(object):
     #     flag=data.data
 
     def refreshActionPayload(self):
-        #rate=rospy.Rate(10)
+        time.sleep(0.01)
         print('baca JSON ')
-        # rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
-        #rate.sleep()
+
     def refreshActionRobot(self):
         #ngeload atau subscribe topic dari robot gui dan node commander
         #----Power batre handling
@@ -197,9 +205,8 @@ class Ui_RemoteUI(object):
         #subscribe current position
         positionValue=str('LSKK')
         self.tableWidgetRobotStatus.setItem(1,0,QtWidgets.QTableWidgetItem(positionValue))
-        #ROS PARAM SUBSCRIBER
-        # rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
-        # rospy.Subscriber('status_topic',Bool,self.callbackStatus)
+        time.sleep(0.1)
+
 
     """CALL-BACK FUNCTION"""
     def callbackJsonTopic(self,data):
@@ -212,16 +219,42 @@ class Ui_RemoteUI(object):
         my_new_list1=stringFile1.split()
         print('my new list parsing',my_new_list1)
         iter=0
-        while iter<z_int*2 :
-            self.tableWidgetPayloadStatus.setItem(iter,2,QtWidgets.QTableWidgetItem(str('Pending')))
-            if iter<z_int:
-                self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+        panjang_list=len(my_new_list1)
+        if (panjang_list/z_int)==2:
+            while iter<z_int*2 :
+                self.tableWidgetPayloadStatus.setItem(iter,2,QtWidgets.QTableWidgetItem(str('Pending')))
+                if iter<z_int:
+                    self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+                    print(my_new_list1[iter])
+                    iter+=1
+                    continue
+                self.tableWidgetPayloadStatus.setItem(iter-z_int,1,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
                 print(my_new_list1[iter])
                 iter+=1
-                continue
-            self.tableWidgetPayloadStatus.setItem(iter-z_int,1,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
-            print(my_new_list1[iter])
-            iter+=1
+            print('selesai parsing data')    
+        elif (panjang_list/z_int)==4: #kalau udpatean dah kelar
+            while iter<z_int*4:
+                if iter<z_int:
+                    self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+                    print(my_new_list1[iter])
+                    iter+=1
+                    continue
+                elif iter<z_int*2 and iter>=z_int:
+                    self.tableWidgetPayloadStatus.setItem(iter-z_int,1,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+                    print(my_new_list1[iter])
+                    iter+=1
+                    continue
+                elif iter<z_int*3 and iter>=z_int*2:
+                    self.tableWidgetPayloadStatus.setItem(iter-z_int*2,2,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+                    print(my_new_list1[iter])
+                    iter+=1
+                    continue    
+                elif iter>=z_int*3:
+                    self.tableWidgetPayloadStatus.setItem(iter-z_int*3,3,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
+                    print(my_new_list1[iter])
+                    iter+=1
+            print('selesai parsing data') 
+
 
     # def callbackPower(self,data):
     #     global powerValue
@@ -244,23 +277,6 @@ class Ui_RemoteUI(object):
         print(my_new_list2)
         self.tableWidgetPayloadStatus.setRowCount(int(num))
 
-    #
-    # def callbackStatus(self,data):
-    #     global statusRobot
-    #     status1=data.data
-    #     global rows
-    #     #pending dan ongoing aku sendiri
-    #     #setiap nerima ini aku konversiin sendiri waktu terima time stampnya
-    #     Time=QTime.currentTime()
-    #     Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-    #     self.tableWidgetPayloadStatus.setItem(rows,3,QtWidgets.QTableWidgetItem(Timestr))
-    #     if status1== True:
-    #         statusRobot='Done'
-    #         self.tableWidgetPayloadStatus.setItem(rows,2,QtWidgets.QTableWidgetItem(statusRobot))
-    #     else:
-    #         statusRobot='Failed'
-    #         self.tableWidgetPayloadStatus.setItem(rows,2,QtWidgets.QTableWidgetItem(statusRobot))
-    #     rows=rows+1
 
     def retranslateUi(self, RemoteUI):
         _translate = QtCore.QCoreApplication.translate
@@ -312,8 +328,12 @@ class Ui_RemoteUI(object):
         # os.system('roscore &')
         """INISIALISASI NODE REMOTE GUI"""
         rospy.init_node('remote_ui',anonymous=False)
+        #Init ros subscriber
         rospy.Subscriber('items_topic',String,self.callbackPayloadtype)
         rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
+        #init ros publisher
+        self.pubChangeAction=rospy.Publisher('change_action',Int32,queue_size=10)
+        #if 1 maka navigasi diaktifkan, 0 maka navigasi ingin dihentikan
 
 #MAIN PROGRAM
 if __name__ == "__main__":
