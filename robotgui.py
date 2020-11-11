@@ -16,15 +16,20 @@ from std_msgs.msg import Int32, Float32, String, Bool,UInt8
 from rospkg import RosPack
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
-from service_robot_msgs.msg import command #Pos dan Uint8
-
+from service_robot_msgs.msg import command #Pose (coordinate) dan Uint8 (data.num)
+import time
 #Global variable
 listTostr1=''
 listTostr2=''
 status1=False
-count=0
+count=1
 tes1=False
 statusRobot=''
+remote_nav=1
+stopMode=False
+kelar=0
+saveTujuan=False
+#CLASS GUI
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
         RobotGUI.setObjectName("RobotGUI")
@@ -190,39 +195,42 @@ class Ui_RobotGUI(object):
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
 
      ##############################fungsi push button################
-
     def initAction(self):
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
-        #os.sytem('roslaunch covid_commander_node covid_commander.launch  &')
-        #MINTA DR DIMAS
+        print('node bringup sudah terpanggil')
+        os.system('roslaunch covid_commander covid_commander.launch &')
+        print('node covid_commander sudah terpanggil')
 
     def startAction(self):
         global count
         global tes1
         global statusRobot
+        global kelar
+
+        sp_box_int=int(self.spinBoxNumItems.text())
         """masuk ke eksekusi"""
-        pubFlag=rospy.Publisher('flag_action',UInt8,queue_size=10)
-        pubFlag.publish(1) # indikasi navigasi
+        self.pubFlag.publish(1) # indikasi navigasi
         #mengirim ke node commander awal (trigger point)
         self.initKirim()
         print('sekuens 1 selesai dikirim')
-        sp_box_int=int(self.spinBoxNumItems.text())
-        #setiap nerima ini aku konversiin sendiri waktu terima time stampnya
-        """" asda"""        
-        #sanity check
-        # print('Status robot ke '+str(count),statusRobot)
-        # self.pubCommander=rospy.Publisher('command_topic',command,queue_size=10)
-        while count<sp_box_int  :
-            #cek dari callback
+        #not stop button
+        while count<sp_box_int and stopMode==False :
+            #cek flag dari callback
+            Time=QTime.currentTime()
+            Timestr=Time.toString(Qt.DefaultLocaleShortDate)
             if (tes1==False):
                 continue
             elif (tes1==True):
                 #update di table widget statusnya
-                print('sekuens '+str(count+2) +' selesai dikirim')
-                self.tableWidgetPayloadStatus.setItem(count,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-                posisi=self.tableWidgetPayloadStatus.item(count+1,1).text()
-                laci=int(self.tableWidgetPayloadStatus.item(count+1,0).text())
+                print('sekuens '+ str(count) +' selesai dieksekusi')
+                #assign udpate nilai ke tabel
+                # Time=QTime.currentTime()
+                # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+                self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+                self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                posisi=self.tableWidgetPayloadStatus.item(count,1).text()
+                laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
                 #PARSING POSISI TO COORDINATE HARDCODE-static
                 if  posisi == 'LSKK':
                     kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
@@ -230,8 +238,8 @@ class Ui_RobotGUI(object):
                     kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
                 elif posisi == 'TA':
                     kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
-                else:
-                    kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
+                else:#kalau input dari user ngawur
+                    kordinat=[2.0,3.0,5.0, 0.1,0.3,0.5,1.0]
                 p=Pose()
                 p.position.x=kordinat[0]
                 p.position.y=kordinat[1]
@@ -245,15 +253,21 @@ class Ui_RobotGUI(object):
                 custom.coordinate=p
                 custom.num.data=laci
                 self.pubCommander.publish(custom)  
+                print('sekuens '+ str(count+1) +' selesai dikirim')
                 count+=1
+            time.sleep(0.1)
             tes1=False
-        if count == sp_box_int:
-            self.tableWidgetPayloadStatus.setItem(count,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-
+            print(count)
+        print('selesai dikerjakan')
+        self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+        self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+        kelar=1
     def stopAction(self):
-        print("flag 2")    
-        pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
-        pubFlag.publish(0)
+        global stopMode
+        stopMode=True
+        print("flag 2") 
+           
+        self.pubFlag.publish(0)
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
         rospy.wait_for_service('cancel_task')
@@ -263,15 +277,10 @@ class Ui_RobotGUI(object):
             print(final_val.success)
         except rospy.ServiceException as e:
             print(e)
-        
-        # if final_val.success=True :
-        # pubStop=rospy.Publisher('stop_condition',String,queue_size=10)
-        # pubStop.publish('Stop')
-        # kudu ngasih perintah terminasi
-        # ros service cancel
 
     def refreshAction(self):
-  
+        global kelar
+        global saveTujuan
         #----IP Address handling
         a=[l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
         astr=str(a)
@@ -306,47 +315,107 @@ class Ui_RobotGUI(object):
         #waktu nya kudu diparsing dulu  pokoknya
         # for row in range(sp_box_int) :
         #     self.tableWidgetPayloadStatus.setItem(row,3,QtWidgets.QTableWidgetItem(Timestr))
+        print(kelar)
+        if saveTujuan==False:
+            if kelar==1:
 
-        #---- status handling
-        """
-            status nya ada = {Done, ongoing,pending}
-            nanti subscire dari status tanda MCU
-            inisialisasi semuanya berupa pending
-        """
-        status_str=str("Pending")
-        for row in range(sp_box_int):
-            self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
-        #Baca File JSON untuk parsing
-        jsonfile_PayloadParam='payload.json'
-        filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
-        with open(filename_PayloadParam,'r') as f:
-            PayloadParam=json.load(f)
-                #make sure json file benar
-        baris=0
-        for p in PayloadParam['kirim']:
-            self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
-            self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
-            baris=baris+1
+                print(kelar)
+                jsonfile_PayloadParam='payload.json'
+                filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
+                PayloadParam={}
+                PayloadParam['kirim']=[]
+                my_list=[]
+
+                num_rows = self.tableWidgetTujuan.rowCount()
+                for row in range(num_rows):
+                    my_dict={}
+                    my_dict['No_laci']=self.tableWidgetPayloadStatus.item(row, 0).text()
+                    my_dict['Tujuan']=self.tableWidgetPayloadStatus.item(row, 1).text()
+                    my_dict['Status']=self.tableWidgetPayloadStatus.item(row,2).text()
+                    my_dict['Timestamp']=self.tableWidgetPayloadStatus.item(row,3).text()
+                    my_list.append(my_dict)
+                    print(my_list)
+                PayloadParam['kirim']=my_list
+                
+                """pengisian input"""
+                with open (filename_PayloadParam,'w') as f:
+                    json.dump(PayloadParam,f)
+
+                with open(filename_PayloadParam,'r') as f:
+                    PayloadParam=json.load(f)
+                        #make sure json file benar
+                baris=0
+                for p in PayloadParam['kirim']:
+                    self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
+                    self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
+                    baris=baris+1
+
+            elif kelar==0:
+                print(kelar)
+                #---- status handling
+                """
+                    status nya ada = {Done, ongoing,pending}
+                    nanti subscire dari status tanda MCU
+                    inisialisasi semuanya berupa pending
+                """
+                status_str=str("Pending")
+                jsonfile_PayloadParam='payload.json'
+                filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
+                for row in range(sp_box_int):
+                    self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
+                #Baca File JSON untuk parsing
+                with open(filename_PayloadParam,'r') as f:
+                    PayloadParam=json.load(f)
+                        #make sure json file benar
+                baris=0
+                for p in PayloadParam['kirim']:
+                    self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
+                    self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
+                    baris=baris+1
+        if saveTujuan==True:
+            kelar=0
+            if kelar==0:
+                print(kelar)
+                #---- status handling
+                """
+                    status nya ada = {Done, ongoing,pending}
+                    nanti subscire dari status tanda MCU
+                    inisialisasi semuanya berupa pending
+                """
+                status_str=str("Pending")
+                jsonfile_PayloadParam='payload.json'
+                filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
+                for row in range(sp_box_int):
+                    self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
+                #Baca File JSON untuk parsing
+                with open(filename_PayloadParam,'r') as f:
+                    PayloadParam=json.load(f)
+                        #make sure json file benar
+                baris=0
+                for p in PayloadParam['kirim']:
+                    self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
+                    self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
+                    baris=baris+1
+        saveTujuan=False
 
 
     """CALL-BACK FUNCTION"""
     def callbackStatus(self,data):   
         global status1 #Bool 1,0
-        #flag
-        global tes1
+        
+        global tes1 #flag callback
         global statusRobot
         status1=data.data
-        tes1=True
         if status1== True:
             statusRobot='Done'
         else:
             statusRobot='Failed'
-        
+        tes1=True
 
-    # def callbackPower(self,data):
-    #     global powerValue  
-    #     powerValue=data.data
-    #     self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
+    def callbackPower(self,data):
+        global powerValue  
+        powerValue=data.data
+        self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
     """CALL-BACK FUNCTION"""
 
 
@@ -372,6 +441,8 @@ class Ui_RobotGUI(object):
 
     def saveAction(self):
         #Membaca input dari TableWidgetTujuan
+        global saveTujuan
+        saveTujuan=True
         jsonfile_PayloadParam='payload.json'
         filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam)
         
@@ -379,7 +450,7 @@ class Ui_RobotGUI(object):
         PayloadParam['kirim']=[]
         my_list=[]
 
-        num_rows, num_cols = self.tableWidgetTujuan.rowCount(), self.tableWidgetTujuan.columnCount()
+        num_rows = self.tableWidgetTujuan.rowCount()
         for row in range(num_rows):
             my_dict={}
             my_dict['No_laci']=self.tableWidgetTujuan.item(row, 0).text()
@@ -499,15 +570,18 @@ class Ui_RobotGUI(object):
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         #inisialisasi roscore dan clean up pre process
         os.system('killall roscore &')
+        time.sleep(2)
         os.system('roscore &')
         """init node rospy GUI robot"""
         #AWALAN
         rospy.init_node('robot_ui',anonymous=False)
         print('masuk init node')
         rospy.Subscriber('status_topic',Bool,self.callbackStatus)
-        rospy.Subscriber('voltage_bat',Bool,self.callbackPower)
+        rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
+        #rospy.Subscriber('change_action',Int32,self.callbackChangeAction)
+        print('topik subcriber sudah siap')
         self.pubCommander=rospy.Publisher('command_topic',command,queue_size=10)
-
+        self.pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
