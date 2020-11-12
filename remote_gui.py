@@ -155,6 +155,7 @@ class Ui_RemoteUI(object):
             print('harus kembali ke idle dahulu')
             print('flag ',flag)
             #kasih popup message
+            QtWidgets.QMessageBox.critical(None,'Fail','Current mode is still running')
         
     def navAction(self):
         global flag
@@ -168,6 +169,7 @@ class Ui_RemoteUI(object):
             print('harus kembali ke idle dahulu')
             print('flag ',flag)
             #kasih popup message
+            QtWidgets.QMessageBox.critical(None,'Fail','Current mode is still running')
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
         global flag
