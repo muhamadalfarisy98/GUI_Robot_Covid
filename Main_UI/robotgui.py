@@ -219,6 +219,7 @@ class Ui_RobotGUI(object):
         print('sekuens 1 selesai dikirim')
         #not stop button
         while count<sp_box_int and stopMode==False :
+            QApplication.processEvents()  
             #cek flag dari callback
             Time=QTime.currentTime()
             Timestr=Time.toString(Qt.DefaultLocaleShortDate)
@@ -450,21 +451,24 @@ class Ui_RobotGUI(object):
         global powerValue  
         powerValue=data.data
         self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
-    
+
     def callbackChangeAction(self,data):
         global changedata
         changedata=data.data 
         print(changedata)
         global stopMode
         """GUARDING CHANGE DATA VALUE"""
-
+        global sp_box_int
+        sp_box_int=int(self.spinBoxNumItems.text())
+        
         if changedata==1:
+            
             global count
             global status_finish
             global statusRobot
             global kelar
 
-            sp_box_int=int(self.spinBoxNumItems.text())
+            # sp_box_int=int(self.spinBoxNumItems.text())
             """masuk ke eksekusi"""
             self.pubFlag.publish(1) # indikasi navigasi
             #mengirim ke node commander awal (trigger point)
@@ -518,6 +522,7 @@ class Ui_RobotGUI(object):
             self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
             self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
             kelar=1
+            changedata=4
             
         elif changedata==0:      
             stopMode=True

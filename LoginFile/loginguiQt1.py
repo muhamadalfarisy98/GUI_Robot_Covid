@@ -5,7 +5,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 from robotgui import Ui_RobotGUI
-import json
+
 class Ui_LoginForm(object):
     def setupUi(self, LoginForm):
         LoginForm.setObjectName("LoginForm")
@@ -38,6 +38,7 @@ class Ui_LoginForm(object):
         self.LoginButton = QtWidgets.QPushButton(LoginForm)
         self.LoginButton.setGeometry(QtCore.QRect(230, 160, 181, 41))
         self.LoginButton.setObjectName("LoginButton")
+        self.LoginButton.setAutoDefault(True)
         self.gambarROS = QtWidgets.QLabel(LoginForm)
         self.gambarROS.setGeometry(QtCore.QRect(530, 10, 71, 41))
         self.gambarROS.setStyleSheet("background-image: url(:/newPrefix/ros.png);")
