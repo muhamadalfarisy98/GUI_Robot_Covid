@@ -325,7 +325,7 @@ class Ui_RobotGUI(object):
 
                 print(kelar)
                 jsonfile_PayloadParam='payload_finish.json'
-                filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
+                filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam) # bisa diubah menjadi '/'
                 PayloadParam={}
                 PayloadParam['kirim']=[]
                 my_list=[]
@@ -392,7 +392,7 @@ class Ui_RobotGUI(object):
                 """
                 status_str=str("Pending")
                 jsonfile_PayloadParam='payload.json'
-                filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
+                filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam) # bisa diubah menjadi '/'
                 for row in range(sp_box_int):
                     self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
                 #Baca File JSON untuk parsing
@@ -416,7 +416,7 @@ class Ui_RobotGUI(object):
                 """
                 status_str=str("Pending")
                 jsonfile_PayloadParam='payload.json'
-                filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam) # bisa diubah menjadi '/'
+                filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam) # bisa diubah menjadi '/'
                 for row in range(sp_box_int):
                     self.tableWidgetPayloadStatus.setItem(row,2,QtWidgets.QTableWidgetItem(status_str))
                 #Baca File JSON untuk parsing
@@ -555,7 +555,7 @@ class Ui_RobotGUI(object):
         global saveTujuan
         saveTujuan=True
         jsonfile_PayloadParam='payload.json'
-        filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam)
+        filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam)
         
         PayloadParam={}
         PayloadParam['kirim']=[]
