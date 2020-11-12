@@ -23,7 +23,7 @@ rows=0
 stringFile1=''
 stringFile2=''
 num=0
-flag=9
+flag=0
 
 class Ui_RemoteUI(object):
     def setupUi(self, RemoteUI):
@@ -144,52 +144,68 @@ class Ui_RemoteUI(object):
 
     """PUSHBUTTON ACTION"""
     def teleopAction(self):
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
-        os.system('roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch &')
+        global flag
+        if flag==0: #guarding
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
+            #os.system('roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch &')
+            #ganti ke packagenya turtleboit twist joy
+            print('mode teleop')
+            flag=3
+        else:
+            print('harus kembali ke idle dahulu')
+            print('flag ',flag)
+            #kasih popup message
         
     def navAction(self):
-        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
-        self.pubChangeAction.publish(1)
-        #ngirim topic ke robot gui bahwa node navigasi ingin dilakukan pengiriman
+        global flag
+        if flag==0: #guarding
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
+            self.pubChangeAction.publish(1)
+            print('mode navigasi')
+            flag=1
+            #ngirim topic ke robot gui bahwa node navigasi ingin dilakukan pengiriman
+        else:
+            print('harus kembali ke idle dahulu')
+            print('flag ',flag)
+            #kasih popup message
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
-        stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
+        global flag
+        
+        stop_nav=str(self.tableWidgetCekMode.item(0,0).text()) #ngambil kondisi sekarang ditabel sedang apa
         if (stop_nav=='Teleoperation Mode'):
-            os.system('rosnode kill teleop_twist_joy &')
-            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(''))
+            #os.system('rosnode kill teleop_twist_joy &')
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
         elif (stop_nav=='Navigation Mode'):
         #   mengirim topik ke robot gui bahwa node navigasi ingin dimatikan
             self.pubChangeAction.publish(0)
-            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(''))
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+        flag=0
 
     def refreshModeAction(self):
-        #Mengambil info atau subscribe topik dari action yang sedang berjalan
-        # rospy.Subscriber('flag_action',UInt8,self.callbackFlagAction)
-        # print(flag)
-        # if flag==0:
-        #     aksi='Idle'
-        # elif flag==1:
-        #     aksi='Navigation Mode'
-        # elif flag==2:
-        #     aksi='Teleoperation Mode'
+        """Mengambil info atau subscribe topik dari action yang sedang berjalan"""
         pesan="""
         Mode Robot:
             0: Idle action
             1: Navigation action
             2: Teleoperation action
             """
+        global flag
         print(pesan)
-        # print('aksi robot',aksi)
-        # self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(aksi))
+        print(flag)
+        if flag==0:
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
         a=str(self.tableWidgetCekMode.item(0,0).text())
         self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(a))
-        if a=='':
-            a='Idle'
         print('On going action : '+a)
 
-    # def callbackFlagAction(self,data):
-    #     global flag
-    #     flag=data.data
+    def callbackFlagAction(self,data):
+        global flag
+        flag=data.data
+        if flag==1:
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
+        elif flag==0:
+            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
 
     def refreshActionPayload(self):
         time.sleep(0.01)
@@ -331,6 +347,7 @@ class Ui_RemoteUI(object):
         #Init ros subscriber
         rospy.Subscriber('items_topic',String,self.callbackPayloadtype)
         rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
+        rospy.Subscriber('flag_action',Int32,self.callbackFlagAction)
         #init ros publisher
         self.pubChangeAction=rospy.Publisher('change_action',Int32,queue_size=10)
         #if 1 maka navigasi diaktifkan, 0 maka navigasi ingin dihentikan
