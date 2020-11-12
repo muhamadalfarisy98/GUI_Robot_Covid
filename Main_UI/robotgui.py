@@ -16,7 +16,7 @@ from std_msgs.msg import Int32, Float32, String, Bool,UInt8
 from rospkg import RosPack
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
-from service_robot_msgs.msg import command #Pose (coordinate) dan Uint8 (data.num)
+from service_robot_msgs.msg import Command #Pose (coordinate) dan Uint8 (data.num)
 import time
 #Global variable
 listTostr1=''
@@ -29,6 +29,9 @@ remote_nav=1
 stopMode=False
 kelar=0
 saveTujuan=False
+changedata=4
+
+
 #CLASS GUI
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
@@ -249,7 +252,7 @@ class Ui_RobotGUI(object):
                 p.orientation.z=kordinat[5]
                 p.orientation.w=kordinat[6]
                 #PUBLISH NODE COMMANDER
-                custom=command()
+                custom=Command()
                 custom.coordinate=p
                 custom.num.data=laci
                 self.pubCommander.publish(custom)  
@@ -262,6 +265,7 @@ class Ui_RobotGUI(object):
         self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
         self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
         kelar=1
+
     def stopAction(self):
         global stopMode
         stopMode=True
@@ -443,8 +447,89 @@ class Ui_RobotGUI(object):
         global powerValue  
         powerValue=data.data
         self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
-    """CALL-BACK FUNCTION"""
+    
+    def callbackChangeAction(self,data):
+        global changedata
+        changedata=data.data 
+        print(changedata)
+        global stopMode
+        """GUARDING CHANGE DATA VALUE"""
+        if changedata==1:
+            global count
+            global status_finish
+            global statusRobot
+            global kelar
 
+            sp_box_int=int(self.spinBoxNumItems.text())
+            """masuk ke eksekusi"""
+            self.pubFlag.publish(1) # indikasi navigasi
+            #mengirim ke node commander awal (trigger point)
+            self.initKirim()
+            print('sekuens 1 selesai dikirim')
+            #not stop button
+            while count<sp_box_int and stopMode==False :
+                #cek flag dari callback
+                Time=QTime.currentTime()
+                Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+                if (status_finish==False):
+                    continue
+                elif (status_finish==True):
+                    #update di table widget statusnya
+                    print('sekuens '+ str(count) +' selesai dieksekusi')
+                    #assign udpate nilai ke tabel
+                    # Time=QTime.currentTime()
+                    # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+                    self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+                    self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                    posisi=self.tableWidgetPayloadStatus.item(count,1).text()
+                    laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
+                    #PARSING POSISI TO COORDINATE HARDCODE-static
+                    if  posisi == 'LSKK':
+                        kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
+                    elif posisi == 'Mekanikal':
+                        kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
+                    elif posisi == 'TA':
+                        kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
+                    else:#kalau input dari user ngawur
+                        kordinat=[2.0,3.0,5.0, 0.1,0.3,0.5,1.0]
+                    p=Pose()
+                    p.position.x=kordinat[0]
+                    p.position.y=kordinat[1]
+                    p.position.z=kordinat[2]
+                    p.orientation.x=kordinat[3]
+                    p.orientation.y=kordinat[4]
+                    p.orientation.z=kordinat[5]
+                    p.orientation.w=kordinat[6]
+                    #PUBLISH NODE COMMANDER
+                    custom=Command()
+                    custom.coordinate=p
+                    custom.num.data=laci
+                    self.pubCommander.publish(custom)  
+                    print('sekuens '+ str(count+1) +' selesai dikirim')
+                    count+=1
+                time.sleep(0.1)
+                status_finish=False
+                print(count)
+            print('selesai dikerjakan')
+            self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+            self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+            kelar=1
+            
+        elif changedata==0:      
+            stopMode=True
+            print("flag 2") 
+            self.pubFlag.publish(0)
+            """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
+            #eksperimen service
+            rospy.wait_for_service('cancel_task')
+            try:
+                xyz=rospy.ServiceProxy('cancel_task', Trigger)
+                final_val=xyz()
+                print(final_val.success)
+            except rospy.ServiceException as e:
+                print(e)
+
+    """CALL-BACK FUNCTION"""    
 
     def addAction(self):
         #SpinBox
@@ -535,7 +620,7 @@ class Ui_RobotGUI(object):
         p.orientation.z=kordinat[5]
         p.orientation.w=kordinat[6]
         #PUBLISH NODE COMMANDER
-        custom=command()
+        custom=Command()
         custom.coordinate=p
         custom.num.data=laci
         self.pubCommander.publish(custom)
@@ -601,12 +686,15 @@ class Ui_RobotGUI(object):
         print('masuk init node')
         rospy.Subscriber('status_topic',Bool,self.callbackStatus)
         rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
-        #rospy.Subscriber('change_action',Int32,self.callbackChangeAction)
+        rospy.Subscriber('change_action',Int32,self.callbackChangeAction)
+        
         print('topik subcriber sudah siap')
-        self.pubCommander=rospy.Publisher('command_topic',command,queue_size=10)
+        self.pubCommander=rospy.Publisher('command_topic',Command,queue_size=10)
         self.pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
         self.pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
         self.pubItems=rospy.Publisher('items_topic',String,queue_size=10)
+        print('topik publish sudah siap')
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
