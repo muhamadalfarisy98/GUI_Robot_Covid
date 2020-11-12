@@ -30,7 +30,7 @@ stopMode=False
 kelar=0
 saveTujuan=False
 changedata=4
-
+#hehe
 
 #CLASS GUI
 class Ui_RobotGUI(object):
