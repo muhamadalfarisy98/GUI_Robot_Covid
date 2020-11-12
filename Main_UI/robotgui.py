@@ -3,7 +3,7 @@
 
 # Form implementation generated from reading ui file 'MainUI.ui'
 # Author: Muhamad Alfarisy (Selasa, 3 November 2020)
-
+#multi thread ref: https://www.learnpyqt.com/tutorials/multithreading-pyqt-applications-qthreadpool/
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTime,Qt
 from PyQt5.QtWidgets import *
@@ -210,7 +210,8 @@ class Ui_RobotGUI(object):
         global status_finish
         global statusRobot
         global kelar
-
+        global stopMode
+        stopMode=False
         sp_box_int=int(self.spinBoxNumItems.text())
         """masuk ke eksekusi"""
         self.pubFlag.publish(1) # indikasi navigasi
@@ -273,18 +274,18 @@ class Ui_RobotGUI(object):
     def stopAction(self):
         global stopMode
         stopMode=True
-        print("flag 2") 
+        print("Stop action") 
            
         self.pubFlag.publish(0)
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
-        rospy.wait_for_service('cancel_task')
-        try:
-            xyz=rospy.ServiceProxy('cancel_task', Trigger)
-            final_val=xyz()
-            print(final_val.success)
-        except rospy.ServiceException as e:
-            print(e)
+        # rospy.wait_for_service('cancel_task')
+        # try:
+        #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
+        #     final_val=xyz()
+        #     print(final_val.success)
+        # except rospy.ServiceException as e:
+        #     print(e)
 
     def refreshAction(self):
         global kelar
@@ -456,88 +457,17 @@ class Ui_RobotGUI(object):
         global changedata
         changedata=data.data 
         print(changedata)
-        global stopMode
+        # global stopMode
         """GUARDING CHANGE DATA VALUE"""
-        global sp_box_int
-        sp_box_int=int(self.spinBoxNumItems.text())
-        
+        # global sp_box_int
+        # sp_box_int=int(self.spinBoxNumItems.text())
         if changedata==1:
-            
-            global count
-            global status_finish
-            global statusRobot
-            global kelar
+            print('exe 1')
+            self.startAction()
 
-            # sp_box_int=int(self.spinBoxNumItems.text())
-            """masuk ke eksekusi"""
-            self.pubFlag.publish(1) # indikasi navigasi
-            #mengirim ke node commander awal (trigger point)
-            self.initKirim()
-            print('sekuens 1 selesai dikirim')
-            #not stop button
-            while count<sp_box_int and stopMode==False :
-                #cek flag dari callback
-                Time=QTime.currentTime()
-                Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-                if (status_finish==False):
-                    continue
-                elif (status_finish==True):
-                    #update di table widget statusnya
-                    print('sekuens '+ str(count) +' selesai dieksekusi')
-                    #assign udpate nilai ke tabel
-                    # Time=QTime.currentTime()
-                    # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-                    self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-                    self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-                    posisi=self.tableWidgetPayloadStatus.item(count,1).text()
-                    laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
-                    #PARSING POSISI TO COORDINATE HARDCODE-static
-                    if  posisi == 'LSKK':
-                        kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
-                    elif posisi == 'Mekanikal':
-                        kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
-                    elif posisi == 'TA':
-                        kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
-                    else:#kalau input dari user ngawur
-                        kordinat=[2.0,3.0,5.0, 0.1,0.3,0.5,1.0]
-                    p=Pose()
-                    p.position.x=kordinat[0]
-                    p.position.y=kordinat[1]
-                    p.position.z=kordinat[2]
-                    p.orientation.x=kordinat[3]
-                    p.orientation.y=kordinat[4]
-                    p.orientation.z=kordinat[5]
-                    p.orientation.w=kordinat[6]
-                    #PUBLISH NODE COMMANDER
-                    custom=Command()
-                    custom.coordinate=p
-                    custom.num.data=laci
-                    self.pubCommander.publish(custom)  
-                    print('sekuens '+ str(count+1) +' selesai dikirim')
-                    count+=1
-                time.sleep(0.1)
-                status_finish=False
-                print(count)
-            print('selesai dikerjakan')
-            self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-            self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-            kelar=1
-            changedata=4
-            
-        elif changedata==0:      
-            stopMode=True
-            print("flag 2") 
-            self.pubFlag.publish(0)
-            """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
-            #eksperimen service
-            rospy.wait_for_service('cancel_task')
-            try:
-                xyz=rospy.ServiceProxy('cancel_task', Trigger)
-                final_val=xyz()
-                print(final_val.success)
-            except rospy.ServiceException as e:
-                print(e)
-
+        elif changedata==0:
+            print('exe 0')
+            self.stopAction()
     """CALL-BACK FUNCTION"""    
 
     def addAction(self):
@@ -633,6 +563,12 @@ class Ui_RobotGUI(object):
         custom.coordinate=p
         custom.num.data=laci
         self.pubCommander.publish(custom)
+    def callbackAksi(self):
+        print('callback aksi')
+        # if changedata==1:
+        #     self.startAction()
+        # elif changedata==0:
+        #     self.stopAction()
 
     def retranslateUi(self, RobotGUI):
         _translate = QtCore.QCoreApplication.translate
@@ -685,6 +621,7 @@ class Ui_RobotGUI(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("RobotGUI", "Robot Action"))
         self.tableWidgetPayloadStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # self.callbackAksi()
         #inisialisasi roscore dan clean up pre process
         os.system('killall roscore &')
         time.sleep(2)
