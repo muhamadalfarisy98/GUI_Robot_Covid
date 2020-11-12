@@ -261,10 +261,13 @@ class Ui_RobotGUI(object):
             time.sleep(0.1)
             status_finish=False
             print(count)
-        print('selesai dikerjakan')
-        self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-        self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-        kelar=1
+        while (count==sp_box_int):    
+            if (status_finish==True): 
+                print('selesai dikerjakan')
+                self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+                self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                kelar=1
+                break
 
     def stopAction(self):
         global stopMode
@@ -454,6 +457,7 @@ class Ui_RobotGUI(object):
         print(changedata)
         global stopMode
         """GUARDING CHANGE DATA VALUE"""
+
         if changedata==1:
             global count
             global status_finish
@@ -700,6 +704,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     RobotGUI = QtWidgets.QWidget()
     ui = Ui_RobotGUI()
+    
     ui.setupUi(RobotGUI)
     RobotGUI.show()
     sys.exit(app.exec_())
