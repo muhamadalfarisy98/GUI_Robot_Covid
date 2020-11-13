@@ -18,6 +18,7 @@ from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
 from service_robot_msgs.msg import Command #Pose (coordinate) dan Uint8 (data.num)
 import time
+
 #Global variable
 listTostr1=''
 listTostr2=''
@@ -197,7 +198,7 @@ class Ui_RobotGUI(object):
         self.tabWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
 
-     ##############################fungsi push button################
+     #############################fungsi push button################
     def initAction(self):
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
@@ -216,13 +217,14 @@ class Ui_RobotGUI(object):
         """masuk ke eksekusi"""
         self.pubFlag.publish(1) # indikasi navigasi
         #mengirim ke node commander awal (trigger point)
-        self.initKirim()
+        # self.initKirim()
         if count==1:
+            self.initKirim()
             print('sekuens 1 selesai dikirim')
         elif count!=1:
-            print('sekuens '+str(count)+'selesai dikirim')
+            #harusnya kalau ditekan start lagi sudah otomatis nilai count nya tersimpan dari nilai counter yang sebelumnya
+            print('sekuens '+str(count)+ ' selesai dikirim')
        
-
         while count<sp_box_int and stopMode==False :
             QApplication.processEvents()  
             #cek flag dari callback
@@ -236,8 +238,10 @@ class Ui_RobotGUI(object):
                 #assign udpate nilai ke tabel
                 # Time=QTime.currentTime()
                 # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+                """update tabel"""
                 self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
                 self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                #PARSING
                 posisi=self.tableWidgetPayloadStatus.item(count,1).text()
                 laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
                 #PARSING POSISI TO COORDINATE HARDCODE-static
@@ -278,8 +282,7 @@ class Ui_RobotGUI(object):
     def stopAction(self):
         global stopMode
         stopMode=True
-        print("Stop action") 
-           
+        print("Stop action")     
         self.pubFlag.publish(0)
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
@@ -560,18 +563,6 @@ class Ui_RobotGUI(object):
         custom.num.data=laci
         self.pubCommander.publish(custom)
 
-    # def callbackAksi(self):
-        
-    #     global changedata
-    #     print('callback aksi')
-    #     if changedata==1:
-    #         print('exe 1')
-    #         self.startAction()
-
-    #     elif changedata==0:
-    #         print('exe 0')
-    #         self.stopAction()
-
     def retranslateUi(self, RobotGUI):
         _translate = QtCore.QCoreApplication.translate
         RobotGUI.setWindowTitle(_translate("RobotGUI", "RobotGUI"))
@@ -621,10 +612,10 @@ class Ui_RobotGUI(object):
         self.stopButton.setText(_translate("RobotGUI", "Stop"))
         self.label_4.setText(_translate("RobotGUI", "1. Init Robot"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("RobotGUI", "Robot Action"))
+        #locking widget Tabel
         self.tableWidgetPayloadStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        # self.callbackAksi()
-
+    
         #inisialisasi roscore dan clean up pre process
         os.system('killall roscore &')
         time.sleep(2)
@@ -648,8 +639,7 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     RobotGUI = QtWidgets.QWidget()
-    ui = Ui_RobotGUI()
-    
+    ui = Ui_RobotGUI()    
     ui.setupUi(RobotGUI)
     RobotGUI.show()
     sys.exit(app.exec_())

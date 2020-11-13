@@ -68,7 +68,6 @@ class Ui_RemoteUI(object):
         self.tableWidgetPayloadStatus.setObjectName("tableWidgetPayloadStatus")
         self.tableWidgetPayloadStatus.setColumnCount(4)
         self.tableWidgetPayloadStatus.setRowCount(0)
-        """TAG"""
         item = QtWidgets.QTableWidgetItem()
         self.tableWidgetPayloadStatus.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -129,7 +128,7 @@ class Ui_RemoteUI(object):
         self.refreshModeButton.setGeometry(QtCore.QRect(100, 320, 131, 41))
         self.refreshModeButton.setObjectName("refreshModeButton")
         self.tabWidget.addTab(self.tab_3, "")
-
+        self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
         #Widget connection
         self.refreshModeButton.clicked.connect(self.refreshModeAction)
         self.changeButton.clicked.connect(self.changeAction)
@@ -182,11 +181,13 @@ class Ui_RemoteUI(object):
             #os.system('rosnode kill teleop_twist_joy &')
             self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+            print(stop_nav+' Dimatikan')
             
         elif (stop_nav=='Navigation Mode'):
         #   mengirim topik ke robot gui bahwa node navigasi ingin dimatikan
             self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+            print(stop_nav+' Dimatikan')
         flag=0
 
     def refreshModeAction(self):
@@ -209,11 +210,13 @@ class Ui_RemoteUI(object):
     def callbackFlagAction(self,data):
         global flag
         flag=data.data
+        navmode=str(self.tableWidgetCekMode.item(0,0).text())
         if flag==1:
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
         elif flag==0:
-            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
-
+            if navmode=='Navigation Mode':
+                self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+            #stop dari robot tidak bisa mematikan fungsi node teleop
     def refreshActionPayload(self):
         time.sleep(0.01)
         print('baca JSON ')
