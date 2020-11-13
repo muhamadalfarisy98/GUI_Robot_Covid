@@ -218,6 +218,7 @@ class Ui_RobotGUI(object):
         self.pubFlag.publish(1) # indikasi navigasi
         #mengirim ke node commander awal (trigger point)
         # self.initKirim()
+        
         if count==1:
             self.initKirim()
             print('sekuens 1 selesai dikirim')
