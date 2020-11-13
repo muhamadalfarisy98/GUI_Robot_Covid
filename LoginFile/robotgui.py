@@ -217,8 +217,12 @@ class Ui_RobotGUI(object):
         self.pubFlag.publish(1) # indikasi navigasi
         #mengirim ke node commander awal (trigger point)
         self.initKirim()
-        print('sekuens 1 selesai dikirim')
-        #not stop button
+        if count==1:
+            print('sekuens 1 selesai dikirim')
+        elif count!=1:
+            print('sekuens '+str(count)+'selesai dikirim')
+       
+
         while count<sp_box_int and stopMode==False :
             QApplication.processEvents()  
             #cek flag dari callback
@@ -312,18 +316,11 @@ class Ui_RobotGUI(object):
 
         """PAYLOAD STATUS"""
         sp_box_int=int(self.spinBoxNumItems.text())
-        """PUBLISH HARUSNYA tipe payload dan number items
-        """
 
-        #---- time handling
-        # Time=QTime.currentTime()
-        # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
         """WAKTU PARSING"""
         #membuat banyak dimensiinya si diwgetTabel
         self.tableWidgetPayloadStatus.setRowCount(sp_box_int)
-        #waktu nya kudu diparsing dulu  pokoknya
-        # for row in range(sp_box_int) :
-        #     self.tableWidgetPayloadStatus.setItem(row,3,QtWidgets.QTableWidgetItem(Timestr))
+
         print(kelar)
         if saveTujuan==False:
             if kelar==1:
@@ -459,8 +456,7 @@ class Ui_RobotGUI(object):
         print(changedata)
         # global stopMode
         """GUARDING CHANGE DATA VALUE"""
-        # global sp_box_int
-        # sp_box_int=int(self.spinBoxNumItems.text())
+
         if changedata==1:
             print('exe 1')
             self.startAction()
@@ -563,12 +559,18 @@ class Ui_RobotGUI(object):
         custom.coordinate=p
         custom.num.data=laci
         self.pubCommander.publish(custom)
-    def callbackAksi(self):
-        print('callback aksi')
-        # if changedata==1:
-        #     self.startAction()
-        # elif changedata==0:
-        #     self.stopAction()
+
+    # def callbackAksi(self):
+        
+    #     global changedata
+    #     print('callback aksi')
+    #     if changedata==1:
+    #         print('exe 1')
+    #         self.startAction()
+
+    #     elif changedata==0:
+    #         print('exe 0')
+    #         self.stopAction()
 
     def retranslateUi(self, RobotGUI):
         _translate = QtCore.QCoreApplication.translate
@@ -622,6 +624,7 @@ class Ui_RobotGUI(object):
         self.tableWidgetPayloadStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         # self.callbackAksi()
+
         #inisialisasi roscore dan clean up pre process
         os.system('killall roscore &')
         time.sleep(2)

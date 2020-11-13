@@ -155,7 +155,8 @@ class Ui_RemoteUI(object):
             print('harus kembali ke idle dahulu')
             print('flag ',flag)
             #kasih popup message
-            QtWidgets.QMessageBox.critical(None,'Fail','Current mode is still running')
+            w=str(self.tableWidgetCekMode.item(0,0).text())
+            QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
         
     def navAction(self):
         global flag
@@ -168,8 +169,10 @@ class Ui_RemoteUI(object):
         else:
             print('harus kembali ke idle dahulu')
             print('flag ',flag)
+            w=str(self.tableWidgetCekMode.item(0,0).text())
             #kasih popup message
-            QtWidgets.QMessageBox.critical(None,'Fail','Current mode is still running')
+            QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
+
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
         global flag
@@ -177,7 +180,9 @@ class Ui_RemoteUI(object):
         stop_nav=str(self.tableWidgetCekMode.item(0,0).text()) #ngambil kondisi sekarang ditabel sedang apa
         if (stop_nav=='Teleoperation Mode'):
             #os.system('rosnode kill teleop_twist_joy &')
+            self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+            
         elif (stop_nav=='Navigation Mode'):
         #   mengirim topik ke robot gui bahwa node navigasi ingin dimatikan
             self.pubChangeAction.publish(0)
