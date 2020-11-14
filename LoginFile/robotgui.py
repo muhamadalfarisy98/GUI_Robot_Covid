@@ -203,8 +203,10 @@ class Ui_RobotGUI(object):
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
         print('node bringup sudah terpanggil')
+        time.sleep(1)
         os.system('roslaunch covid_commander covid_commander.launch &')
         print('node covid_commander sudah terpanggil')
+        #butuh pemberitahuan kalau robot itu sudah siap digunakan
 
     def startAction(self):
         global count
@@ -216,29 +218,27 @@ class Ui_RobotGUI(object):
         sp_box_int=int(self.spinBoxNumItems.text())
         """masuk ke eksekusi"""
         self.pubFlag.publish(1) # indikasi navigasi
-        #mengirim ke node commander awal (trigger point)
-        # self.initKirim()
-        
         if count==1:
             self.initKirim()
             print('sekuens 1 selesai dikirim')
-        elif count!=1:
+        elif count!=1 and count<=sp_box_int:
             #harusnya kalau ditekan start lagi sudah otomatis nilai count nya tersimpan dari nilai counter yang sebelumnya
             print('sekuens '+str(count)+ ' selesai dikirim')
-       
+
+        #guarding point
         while count<sp_box_int and stopMode==False :
+            #thread
             QApplication.processEvents()  
-            #cek flag dari callback
+            #Parsing waktu local
             Time=QTime.currentTime()
             Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+            #cek flag dari callback
             if (status_finish==False):
                 continue
             elif (status_finish==True):
                 #update di table widget statusnya
                 print('sekuens '+ str(count) +' selesai dieksekusi')
                 #assign udpate nilai ke tabel
-                # Time=QTime.currentTime()
-                # Timestr=Time.toString(Qt.DefaultLocaleShortDate)
                 """update tabel"""
                 self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
                 self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
@@ -270,14 +270,19 @@ class Ui_RobotGUI(object):
                 print('sekuens '+ str(count+1) +' selesai dikirim')
                 count+=1
             time.sleep(0.1)
+            #re-state
             status_finish=False
             print(count)
+        #parsing tabel index akhir
         while (count==sp_box_int):    
+            #sanity check
+            Time=QTime.currentTime()
+            Timestr=Time.toString(Qt.DefaultLocaleShortDate)
             if (status_finish==True): 
-                print('selesai dikerjakan')
+                print('semua proses telah selesai dikerjakan')
                 self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
                 self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-                kelar=1
+                kelar=1 #flag parsing
                 break
 
     def stopAction(self):
@@ -287,6 +292,7 @@ class Ui_RobotGUI(object):
         self.pubFlag.publish(0)
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
+        """SEMENTARA DI COMMENT"""
         # rospy.wait_for_service('cancel_task')
         # try:
         #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
@@ -294,6 +300,7 @@ class Ui_RobotGUI(object):
         #     print(final_val.success)
         # except rospy.ServiceException as e:
         #     print(e)
+
 
     def refreshAction(self):
         global kelar
@@ -317,15 +324,15 @@ class Ui_RobotGUI(object):
         #subscribe current position
         positionValue=str('LSKK')
         self.tableWidgetRobotStatus.setItem(2,0,QtWidgets.QTableWidgetItem(positionValue))
-
-        """PAYLOAD STATUS"""
-        sp_box_int=int(self.spinBoxNumItems.text())
-
-        """WAKTU PARSING"""
         #membuat banyak dimensiinya si diwgetTabel
+        sp_box_int=int(self.spinBoxNumItems.text())
         self.tableWidgetPayloadStatus.setRowCount(sp_box_int)
+        if kelar==1:
+            statKelar=str('Sudah selesai')
+            print('Kondisi navigasi '+statKelar)
+        else:
+            print(kelar)
 
-        print(kelar)
         if saveTujuan==False:
             if kelar==1:
 
@@ -460,15 +467,31 @@ class Ui_RobotGUI(object):
         print(changedata)
         # global stopMode
         """GUARDING CHANGE DATA VALUE"""
-
         if changedata==1:
             print('exe 1')
             self.startAction()
 
         elif changedata==0:
             print('exe 0')
-            self.stopAction()
+            #self.stopAction()
+            self.stopActionRemote()
     """CALL-BACK FUNCTION"""    
+    def stopActionRemote(self):
+        global stopMode
+        stopMode=True
+        print("Stop action")     
+        """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
+        #eksperimen service
+        """SEMENTARA DI COMMENT"""
+        # rospy.wait_for_service('cancel_task')
+        # try:
+        #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
+        #     final_val=xyz()
+        #     print(final_val.success)
+        # except rospy.ServiceException as e:
+        #     print(e)
+
+
 
     def addAction(self):
         #SpinBox
@@ -533,8 +556,8 @@ class Ui_RobotGUI(object):
         global listTostr1,listTostr2
         listTostr1= ' '.join([str(elem) for elem in my_list1]) 
         print(listTostr1)
-
         self.pubJsonTopic.publish(listTostr1)
+        print('Parsing ke remote gui')
 
     def initKirim(self):
         # kordinat=[]

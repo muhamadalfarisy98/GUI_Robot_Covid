@@ -24,7 +24,7 @@ stringFile1=''
 stringFile2=''
 num=0
 flag=0
-
+flag_tele=1 #default state
 class Ui_RemoteUI(object):
     def setupUi(self, RemoteUI):
         RemoteUI.setObjectName("RemoteUI")
@@ -144,22 +144,27 @@ class Ui_RemoteUI(object):
     """PUSHBUTTON ACTION"""
     def teleopAction(self):
         global flag
-        if flag==0: #guarding
+        global flag_tele
+        print('flag_tele_val',flag_tele)
+        if flag==0 and flag_tele==1: #guarding
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
             #os.system('roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch &')
+            #time.sleep(0.25)
             #ganti ke packagenya turtleboit twist joy
             print('mode teleop')
-            flag=3
+            flag=2
         else:
             print('harus kembali ke idle dahulu')
             print('flag ',flag)
             #kasih popup message
             w=str(self.tableWidgetCekMode.item(0,0).text())
             QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
-        
+
     def navAction(self):
         global flag
-        if flag==0: #guarding
+        stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
+
+        if flag==0 and stop_nav=='Idle Mode' : #guarding
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
             self.pubChangeAction.publish(1)
             print('mode navigasi')
@@ -175,21 +180,26 @@ class Ui_RemoteUI(object):
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
         global flag
-        
+        global flag_tele
         stop_nav=str(self.tableWidgetCekMode.item(0,0).text()) #ngambil kondisi sekarang ditabel sedang apa
         if (stop_nav=='Teleoperation Mode'):
             #os.system('rosnode kill teleop_twist_joy &')
             self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+            flag_tele=1
             print(stop_nav+' Dimatikan')
-            
+
         elif (stop_nav=='Navigation Mode'):
         #   mengirim topik ke robot gui bahwa node navigasi ingin dimatikan
             self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
             print(stop_nav+' Dimatikan')
+        else:
+            flag_tele=1
+            print('Masih berada di Idle mode')
+        #re-state idle mode
         flag=0
-
+    """NOT REALLY NECESSARY BUT CAN BE USED TO REFRESH WINDOW A BIT"""
     def refreshModeAction(self):
         """Mengambil info atau subscribe topik dari action yang sedang berjalan"""
         pesan="""
@@ -201,7 +211,8 @@ class Ui_RemoteUI(object):
         global flag
         print(pesan)
         print(flag)
-        if flag==0:
+        stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
+        if flag==0 and stop_nav=='Idle Mode':
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
         a=str(self.tableWidgetCekMode.item(0,0).text())
         self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(a))
@@ -209,14 +220,21 @@ class Ui_RemoteUI(object):
 
     def callbackFlagAction(self,data):
         global flag
+        global flag_tele
         flag=data.data
         navmode=str(self.tableWidgetCekMode.item(0,0).text())
         if flag==1:
+            print('menjalankan navigasi mode')
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
-        elif flag==0:
+        elif flag==0: #Nilai flag ini hanya mematikan mode navigasi saja tidak teleoperasi
             if navmode=='Navigation Mode':
+                print('stop Navigation mode')
                 self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
+            else:
+                print('masuk callbackFlagAction')
+                flag_tele=0
             #stop dari robot tidak bisa mematikan fungsi node teleop
+
     def refreshActionPayload(self):
         time.sleep(0.01)
         print('baca JSON ')
@@ -246,6 +264,7 @@ class Ui_RemoteUI(object):
         print('my new list parsing',my_new_list1)
         iter=0
         panjang_list=len(my_new_list1)
+        print('panjang list update ', panjang_list)
         if (panjang_list/z_int)==2:
             while iter<z_int*2 :
                 self.tableWidgetPayloadStatus.setItem(iter,2,QtWidgets.QTableWidgetItem(str('Pending')))
@@ -257,9 +276,10 @@ class Ui_RemoteUI(object):
                 self.tableWidgetPayloadStatus.setItem(iter-z_int,1,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
                 print(my_new_list1[iter])
                 iter+=1
-            print('selesai parsing data')    
+            print('selesai parsing data inisial')
         elif (panjang_list/z_int)==4: #kalau udpatean dah kelar
             while iter<z_int*4:
+                print('mulai parsing data')
                 if iter<z_int:
                     self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
                     print(my_new_list1[iter])
@@ -274,12 +294,12 @@ class Ui_RemoteUI(object):
                     self.tableWidgetPayloadStatus.setItem(iter-z_int*2,2,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
                     print(my_new_list1[iter])
                     iter+=1
-                    continue    
+                    continue
                 elif iter>=z_int*3:
                     self.tableWidgetPayloadStatus.setItem(iter-z_int*3,3,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
                     print(my_new_list1[iter])
                     iter+=1
-            print('selesai parsing data') 
+            print('selesai parsing data')
 
 
     # def callbackPower(self,data):
