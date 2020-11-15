@@ -218,15 +218,22 @@ class Ui_RobotGUI(object):
         sp_box_int=int(self.spinBoxNumItems.text())
         """masuk ke eksekusi"""
         self.pubFlag.publish(1) # indikasi navigasi
+        #GUARDING re-navigate
+        # if kelar==1:
+        #     print('re-input value')
+        #     #re-state variable value
+        #     count=1
+        #     kelar=0
+        #GUARDING navigate process
         if count==1:
             self.initKirim()
             print('sekuens 1 selesai dikirim')
-        elif count!=1 and count<=sp_box_int:
+        elif count!=1 and count<=sp_box_int and kelar!=1:
             #harusnya kalau ditekan start lagi sudah otomatis nilai count nya tersimpan dari nilai counter yang sebelumnya
             print('sekuens '+str(count)+ ' selesai dikirim')
 
         #guarding point
-        while count<sp_box_int and stopMode==False :
+        while count<sp_box_int and stopMode==False and kelar==0:
             #thread
             QApplication.processEvents()  
             #Parsing waktu local
@@ -246,11 +253,11 @@ class Ui_RobotGUI(object):
                 posisi=self.tableWidgetPayloadStatus.item(count,1).text()
                 laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
                 #PARSING POSISI TO COORDINATE HARDCODE-static
-                if  posisi == 'LSKK':
+                if  posisi == 'LSKK' or 'lskk' or 'Lskk':
                     kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
-                elif posisi == 'Mekanikal':
+                elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
                     kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
-                elif posisi == 'TA':
+                elif posisi == 'TA' or 'ta' or 'tugasakhir':
                     kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
                 else:#kalau input dari user ngawur
                     kordinat=[2.0,3.0,5.0, 0.1,0.3,0.5,1.0]
@@ -272,9 +279,9 @@ class Ui_RobotGUI(object):
             time.sleep(0.1)
             #re-state
             status_finish=False
-            print(count)
+            print('counter ',count)
         #parsing tabel index akhir
-        while (count==sp_box_int):    
+        while (count==sp_box_int and kelar!=1):    
             #sanity check
             Time=QTime.currentTime()
             Timestr=Time.toString(Qt.DefaultLocaleShortDate)
@@ -282,7 +289,9 @@ class Ui_RobotGUI(object):
                 print('semua proses telah selesai dikerjakan')
                 self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
                 self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-                kelar=1 #flag parsing
+                kelar=1 #flag parsing dan tanda udah selesai seluru sekuens navigasi
+                print('nilai kelar',kelar)
+                self.stopAction()
                 break
 
     def stopAction(self):
@@ -515,6 +524,14 @@ class Ui_RobotGUI(object):
     def saveAction(self):
         #Membaca input dari TableWidgetTujuan
         global saveTujuan
+        global kelar
+        global count
+        if kelar==1:
+            print('reinput value berhasil')
+            count=1
+            kelar=0
+            print('kelar ',kelar)
+            print('count ',count)
         saveTujuan=True
         jsonfile_PayloadParam='payload.json'
         filename_PayloadParam=os.path.join('./',jsonfile_PayloadParam)
@@ -565,11 +582,11 @@ class Ui_RobotGUI(object):
         posisi=self.tableWidgetPayloadStatus.item(0,1).text()
         laci=int(self.tableWidgetPayloadStatus.item(0,0).text())
         #PARSING POSISI TO COORDINATE HARDCODE-static
-        if  posisi == 'LSKK':
+        if  posisi == 'LSKK' or 'lskk' or 'Lskk':
             kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
-        elif posisi == 'Mekanikal':
+        elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
             kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
-        elif posisi == 'TA':
+        elif posisi == 'TA' or 'ta' or 'tugasakhir':
             kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
         else:
             kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
