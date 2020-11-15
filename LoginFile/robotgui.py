@@ -327,6 +327,7 @@ class Ui_RobotGUI(object):
                 kelar=1 #flag parsing dan tanda udah selesai seluru sekuens navigasi
                 self.pubKelar.publish(kelar)
                 print('nilai kelar',kelar)
+                status_finish=False
                 self.stopAction()
                 break
 
