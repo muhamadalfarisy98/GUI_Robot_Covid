@@ -320,10 +320,10 @@
     <widget class="QPushButton" name="initButton">
      <property name="geometry">
       <rect>
-       <x>190</x>
-       <y>60</y>
-       <width>191</width>
-       <height>61</height>
+       <x>210</x>
+       <y>150</y>
+       <width>161</width>
+       <height>41</height>
       </rect>
      </property>
      <property name="toolTip">
@@ -400,6 +400,32 @@
      <property name="text">
       <string>1. Init Robot</string>
      </property>
+    </widget>
+    <widget class="QTableWidget" name="InitRobottableWidget">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>70</y>
+       <width>311</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <attribute name="horizontalHeaderDefaultSectionSize">
+      <number>220</number>
+     </attribute>
+     <attribute name="horizontalHeaderMinimumSectionSize">
+      <number>52</number>
+     </attribute>
+     <row>
+      <property name="text">
+       <string>Robot status</string>
+      </property>
+     </row>
+     <column>
+      <property name="text">
+       <string>Value</string>
+      </property>
+     </column>
     </widget>
    </widget>
   </widget>

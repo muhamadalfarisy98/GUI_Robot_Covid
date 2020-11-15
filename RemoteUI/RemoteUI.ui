@@ -26,28 +26,12 @@
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab_2">
     <attribute name="title">
      <string>Status Monitor</string>
     </attribute>
-    <widget class="QPushButton" name="refreshPayloadButton">
-     <property name="geometry">
-      <rect>
-       <x>350</x>
-       <y>280</y>
-       <width>181</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Update current changes&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Refresh Payload Status</string>
-     </property>
-    </widget>
     <widget class="QTableWidget" name="tableWidgetRobotStatus">
      <property name="geometry">
       <rect>
@@ -185,14 +169,14 @@
     <widget class="QPushButton" name="refreshRobotButton">
      <property name="geometry">
       <rect>
-       <x>40</x>
-       <y>280</y>
+       <x>210</x>
+       <y>310</y>
        <width>181</width>
        <height>41</height>
       </rect>
      </property>
      <property name="text">
-      <string>Refresh Robot Status</string>
+      <string>Refresh</string>
      </property>
     </widget>
    </widget>

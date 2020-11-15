@@ -152,7 +152,7 @@ class Ui_RobotGUI(object):
         self.tab_3 = QtWidgets.QWidget()
         self.tab_3.setObjectName("tab_3")
         self.initButton = QtWidgets.QPushButton(self.tab_3)
-        self.initButton.setGeometry(QtCore.QRect(190, 60, 191, 61))
+        self.initButton.setGeometry(QtCore.QRect(210, 150, 161, 41))
         self.initButton.setObjectName("initButton")
         self.label_3 = QtWidgets.QLabel(self.tab_3)
         self.label_3.setGeometry(QtCore.QRect(150, 250, 311, 41))
@@ -178,7 +178,19 @@ class Ui_RobotGUI(object):
         font.setPointSize(15)
         self.label_4.setFont(font)
         self.label_4.setObjectName("label_4")
+        self.InitRobottableWidget = QtWidgets.QTableWidget(self.tab_3)
+        self.InitRobottableWidget.setGeometry(QtCore.QRect(130, 70, 311, 51))
+        self.InitRobottableWidget.setObjectName("InitRobottableWidget")
+        self.InitRobottableWidget.setColumnCount(1)
+        self.InitRobottableWidget.setRowCount(1)
+        item = QtWidgets.QTableWidgetItem()
+        self.InitRobottableWidget.setVerticalHeaderItem(0, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.InitRobottableWidget.setHorizontalHeaderItem(0, item)
+        self.InitRobottableWidget.horizontalHeader().setDefaultSectionSize(220)
+        self.InitRobottableWidget.horizontalHeader().setMinimumSectionSize(52)
         self.tabWidget.addTab(self.tab_3, "")
+        self.InitRobottableWidget.setItem(0,0,QtWidgets.QTableWidgetItem('Robot Belum Init'))
 
         #comboBox list
         payLoadListType=["Drugs","Foods","Sprayer"]
@@ -197,8 +209,7 @@ class Ui_RobotGUI(object):
         self.retranslateUi(RobotGUI)
         self.tabWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
-
-     #############################fungsi push button################
+#############################fungsi push button################
     def initAction(self):
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
@@ -206,8 +217,8 @@ class Ui_RobotGUI(object):
         time.sleep(1)
         os.system('roslaunch covid_commander covid_commander.launch &')
         print('node covid_commander sudah terpanggil')
-        #butuh pemberitahuan kalau robot itu sudah siap digunakan
-
+        # butuh pemberitahuan kalau robot itu sudah siap digunakan
+        self.InitRobottableWidget.setItem(0,0,QtWidgets.QTableWidgetItem('Robot Sudah Init'))
     def startAction(self):
         global count
         global status_finish
@@ -216,9 +227,19 @@ class Ui_RobotGUI(object):
         global stopMode
         global stringRT
         stopMode=False
+        #guarding re-navigate
+        if kelar==1:
+            # stopMode=True
+            print('stop action')
+            print('harap mengisi kembali item tujuan payload')
+            QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
+            self.stopAction()
+            print('stop aksi')
+        else:
+            self.pubFlag.publish(1) # indikasi navigasi
         sp_box_int=int(self.spinBoxNumItems.text())
         """masuk ke eksekusi"""
-        self.pubFlag.publish(1) # indikasi navigasi
+        #self.pubFlag.publish(1) # indikasi navigasi
         #GUARDING navigate process
         if count==1:
             self.initKirim()
@@ -304,6 +325,7 @@ class Ui_RobotGUI(object):
                 print('string Realtime berhasil dipublish')
 
                 kelar=1 #flag parsing dan tanda udah selesai seluru sekuens navigasi
+                self.pubKelar.publish(kelar)
                 print('nilai kelar',kelar)
                 self.stopAction()
                 break
@@ -465,8 +487,6 @@ class Ui_RobotGUI(object):
                     self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
                     baris=baris+1
         saveTujuan=False
-
-
     """CALL-BACK FUNCTION"""
     def callbackStatus(self,data):   
         global status1 #Bool 1,0
@@ -544,6 +564,7 @@ class Ui_RobotGUI(object):
             print('reinput value berhasil')
             count=1
             kelar=0
+            self.pubKelar.publish(kelar)
             print('kelar ',kelar)
             print('count ',count)
         saveTujuan=True
@@ -617,7 +638,6 @@ class Ui_RobotGUI(object):
         custom.coordinate=p
         custom.num.data=laci
         self.pubCommander.publish(custom)
-
     def retranslateUi(self, RobotGUI):
         _translate = QtCore.QCoreApplication.translate
         RobotGUI.setWindowTitle(_translate("RobotGUI", "RobotGUI"))
@@ -666,11 +686,15 @@ class Ui_RobotGUI(object):
         self.stopButton.setToolTip(_translate("RobotGUI", "<html><head/><body><p>Mematikan fungsi autonomous navigasi robot</p><p><br/></p></body></html>"))
         self.stopButton.setText(_translate("RobotGUI", "Stop"))
         self.label_4.setText(_translate("RobotGUI", "1. Init Robot"))
+        item = self.InitRobottableWidget.verticalHeaderItem(0)
+        item.setText(_translate("RobotGUI", "Robot status"))
+        item = self.InitRobottableWidget.horizontalHeaderItem(0)
+        item.setText(_translate("RobotGUI", "Value"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("RobotGUI", "Robot Action"))
         #locking widget Tabel
         self.tableWidgetPayloadStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
-    
+        self.InitRobottableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         #inisialisasi roscore dan clean up pre process
         os.system('killall roscore &')
         time.sleep(2)
@@ -689,13 +713,14 @@ class Ui_RobotGUI(object):
         self.pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
         self.pubItems=rospy.Publisher('items_topic',String,queue_size=10)
         self.pubStringRT=rospy.Publisher('string_RT',String,queue_size=10)
+        self.pubKelar=rospy.Publisher('kelar_kirim',Int32,queue_size=10)
         print('topik publish sudah siap')
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     RobotGUI = QtWidgets.QWidget()
-    ui = Ui_RobotGUI()    
+    ui = Ui_RobotGUI()
     ui.setupUi(RobotGUI)
     RobotGUI.show()
     sys.exit(app.exec_())
