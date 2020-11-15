@@ -306,7 +306,7 @@ class Ui_RobotGUI(object):
             status_finish=False
             print('counter ',count)
         #parsing tabel index akhir
-        while (count==sp_box_int and kelar!=1):    
+        while (count==sp_box_int and kelar!=1):   
             #sanity check
             dummy_list=[]
             Time=QTime.currentTime()
@@ -486,6 +486,8 @@ class Ui_RobotGUI(object):
                 for p in PayloadParam['kirim']:
                     self.tableWidgetPayloadStatus.setItem(baris,0,QtWidgets.QTableWidgetItem(p['No_laci']))
                     self.tableWidgetPayloadStatus.setItem(baris,1,QtWidgets.QTableWidgetItem(p['Tujuan']))
+                    self.tableWidgetPayloadStatus.setItem(baris,3,QtWidgets.QTableWidgetItem(''))
+                    """"yang baru ditambah"""
                     baris=baris+1
         saveTujuan=False
     """CALL-BACK FUNCTION"""

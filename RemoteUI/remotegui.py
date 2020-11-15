@@ -256,6 +256,8 @@ class Ui_RemoteUI(object):
 
     def callbackStringRT(self,data):
         global string_RT
+        z=str(self.tableWidgetRobotStatus.item(3,0).text())
+        z_int=int(z)
         list_rt=[]
         string_RT=data.data
         list_rt=string_RT.split()
@@ -267,6 +269,8 @@ class Ui_RemoteUI(object):
         print('indeks',indeks)
         self.tableWidgetPayloadStatus.setItem(indeks-1,2,QtWidgets.QTableWidgetItem(str(list_rt[1])  ) )
         self.tableWidgetPayloadStatus.setItem(indeks-1,3,QtWidgets.QTableWidgetItem(str(list_rt[2]) ) )
+        if indeks<z_int:
+            self.tableWidgetPayloadStatus.setItem(indeks,2,QtWidgets.QTableWidgetItem('Ongoing' ) )
         print('parsing realtime data berhasil')
 
     def callbackJsonTopic(self,data):
@@ -284,6 +288,7 @@ class Ui_RemoteUI(object):
         if (panjang_list/z_int)==2:
             while iter<z_int*2 :
                 self.tableWidgetPayloadStatus.setItem(iter,2,QtWidgets.QTableWidgetItem(str('Pending')))
+                self.tableWidgetPayloadStatus.setItem(iter,3,QtWidgets.QTableWidgetItem(''))
                 if iter<z_int:
                     self.tableWidgetPayloadStatus.setItem(iter,0,QtWidgets.QTableWidgetItem(str(my_new_list1[iter])))
                     print(my_new_list1[iter])
