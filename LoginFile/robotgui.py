@@ -31,7 +31,7 @@ stopMode=False
 kelar=0
 saveTujuan=False
 changedata=4
-#hehe
+stringRT=''
 
 #CLASS GUI
 class Ui_RobotGUI(object):
@@ -214,16 +214,11 @@ class Ui_RobotGUI(object):
         global statusRobot
         global kelar
         global stopMode
+        global stringRT
         stopMode=False
         sp_box_int=int(self.spinBoxNumItems.text())
         """masuk ke eksekusi"""
         self.pubFlag.publish(1) # indikasi navigasi
-        #GUARDING re-navigate
-        # if kelar==1:
-        #     print('re-input value')
-        #     #re-state variable value
-        #     count=1
-        #     kelar=0
         #GUARDING navigate process
         if count==1:
             self.initKirim()
@@ -235,6 +230,7 @@ class Ui_RobotGUI(object):
         #guarding point
         while count<sp_box_int and stopMode==False and kelar==0:
             #thread
+            dummy_list=[]
             QApplication.processEvents()  
             #Parsing waktu local
             Time=QTime.currentTime()
@@ -249,6 +245,14 @@ class Ui_RobotGUI(object):
                 """update tabel"""
                 self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
                 self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                """parsing realtime"""
+                dummy_list.append(count)
+                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,2).text())
+                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,3).text())
+                print('isi list yang mau diparsing', dummy_list)
+                stringRT= ' '.join([str(elem) for elem in dummy_list]) 
+                self.pubStringRT.publish(stringRT)
+                print('string Realtime berhasil dipublish')
                 #PARSING
                 posisi=self.tableWidgetPayloadStatus.item(count,1).text()
                 laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
@@ -283,12 +287,22 @@ class Ui_RobotGUI(object):
         #parsing tabel index akhir
         while (count==sp_box_int and kelar!=1):    
             #sanity check
+            dummy_list=[]
             Time=QTime.currentTime()
             Timestr=Time.toString(Qt.DefaultLocaleShortDate)
             if (status_finish==True): 
                 print('semua proses telah selesai dikerjakan')
                 self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
                 self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                """parsing realtime"""
+                dummy_list.append(count)
+                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,2).text())
+                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,3).text())
+                print('isi list yang mau diparsing', dummy_list)
+                stringRT= ' '.join([str(elem) for elem in dummy_list]) 
+                self.pubStringRT.publish(stringRT)
+                print('string Realtime berhasil dipublish')
+
                 kelar=1 #flag parsing dan tanda udah selesai seluru sekuens navigasi
                 print('nilai kelar',kelar)
                 self.stopAction()
@@ -674,6 +688,7 @@ class Ui_RobotGUI(object):
         self.pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
         self.pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
         self.pubItems=rospy.Publisher('items_topic',String,queue_size=10)
+        self.pubStringRT=rospy.Publisher('string_RT',String,queue_size=10)
         print('topik publish sudah siap')
 
 if __name__ == "__main__":

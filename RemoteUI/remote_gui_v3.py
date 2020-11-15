@@ -253,6 +253,21 @@ class Ui_RemoteUI(object):
 
 
     """CALL-BACK FUNCTION"""
+    def callbackStringRT(self,data):
+        global string_RT
+        list_rt=[]
+        string_RT=data.data
+        list_rt=string_RT.split()
+        print('list parsing ',list_rt)
+        indeks=int(list_rt[0])
+        print('status:',list_rt[1])
+        print('status type:',type(list_rt[1]))
+        print('parsing jam:',list_rt[2])
+        print('indeks',indeks)
+        self.tableWidgetPayloadStatus.setItem(indeks-1,2,QtWidgets.QTableWidgetItem(str(list_rt[1])  ) )
+        self.tableWidgetPayloadStatus.setItem(indeks-1,3,QtWidgets.QTableWidgetItem(str(list_rt[2]) ) )
+        print('parsing realtime data berhasil')
+
     def callbackJsonTopic(self,data):
         global stringFile1
         z=str(self.tableWidgetRobotStatus.item(3,0).text())
@@ -378,6 +393,7 @@ class Ui_RemoteUI(object):
         rospy.Subscriber('items_topic',String,self.callbackPayloadtype)
         rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
         rospy.Subscriber('flag_action',Int32,self.callbackFlagAction)
+        rospy.Subscriber('string_RT',String,self.callbackStringRT)
         #init ros publisher
         self.pubChangeAction=rospy.Publisher('change_action',Int32,queue_size=10)
         #if 1 maka navigasi diaktifkan, 0 maka navigasi ingin dihentikan
