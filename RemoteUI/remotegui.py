@@ -16,7 +16,7 @@ from rospkg import RosPack
 import time
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Pose
-from service_robot_msgs.msg import command
+from service_robot_msgs.msg import Command
 
 #variable global
 rows=0
@@ -145,7 +145,7 @@ class Ui_RemoteUI(object):
         print('flag_tele_val',flag_tele)
         if flag==0 and flag_tele==1: #guarding
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
-            #os.system('roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch &')
+            os.system('roslaunch turtlebot3_teleop joystick_control.launch &')
             #time.sleep(0.25)
             #ganti ke packagenya turtleboit twist joy
             print('mode teleop')
@@ -183,7 +183,7 @@ class Ui_RemoteUI(object):
         global flag_tele
         stop_nav=str(self.tableWidgetCekMode.item(0,0).text()) #ngambil kondisi sekarang ditabel sedang apa
         if (stop_nav=='Teleoperation Mode'):
-            #os.system('rosnode kill teleop_twist_joy &')
+            os.system('rosnode kill teleop_twist_joy &')
             self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
             flag_tele=1
@@ -393,6 +393,7 @@ class Ui_RemoteUI(object):
         # os.system('roscore &')
         """INISIALISASI NODE REMOTE GUI"""
         rospy.init_node('remote_ui',anonymous=False)
+        os.system('roslaunch turtlebot3_bringup gui_monitor.launch &')
         #Init ros subscriber
         rospy.Subscriber('items_topic',String,self.callbackPayloadtype)
         rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
