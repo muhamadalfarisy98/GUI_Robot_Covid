@@ -279,9 +279,9 @@ class Ui_RobotGUI(object):
                 laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
                 #PARSING POSISI TO COORDINATE HARDCODE-static
                 if  posisi == 'LSKK' or 'lskk' or 'Lskk':
-                    kordinat=[1.0,2.0,3.0, 0.0,0.3,0.5,1.0]
+                    kordinat=[0.0,0.547,1.712, 0.816,0.0,0.0,0.576]
                 elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
-                    kordinat=[1.0,2.0,3.0, 0.0,0.1,0.7,1.5]
+                    kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
                 elif posisi == 'TA' or 'ta' or 'tugasakhir':
                     kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
                 else:#kalau input dari user ngawur
