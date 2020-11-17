@@ -6,6 +6,7 @@
 #multi thread ref: https://www.learnpyqt.com/tutorials/multithreading-pyqt-applications-qthreadpool/
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTime,Qt
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import socket
@@ -212,13 +213,14 @@ class Ui_RobotGUI(object):
 #############################fungsi push button################
     def initAction(self):
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
-        os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
-        print('node bringup sudah terpanggil')
+        #os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
+        #print('node bringup sudah terpanggil')
         time.sleep(1)
         os.system('roslaunch covid_commander covid_commander.launch &')
         print('node covid_commander sudah terpanggil')
         # butuh pemberitahuan kalau robot itu sudah siap digunakan
         self.InitRobottableWidget.setItem(0,0,QtWidgets.QTableWidgetItem('Robot Sudah Init'))
+        # self.pubRviz.publish(True)
     def startAction(self):
         global count
         global status_finish
@@ -258,8 +260,10 @@ class Ui_RobotGUI(object):
             Timestr=Time.toString(Qt.DefaultLocaleShortDate)
             #cek flag dari callback
             if (status_finish==False):
+                QApplication.processEvents()  
                 continue
             elif (status_finish==True):
+                QApplication.processEvents()  
                 #update di table widget statusnya
                 print('sekuens '+ str(count) +' selesai dieksekusi')
                 #assign udpate nilai ke tabel
@@ -307,6 +311,7 @@ class Ui_RobotGUI(object):
             print('counter ',count)
         #parsing tabel index akhir
         while (count==sp_box_int and kelar!=1):   
+            QApplication.processEvents()  
             #sanity check
             dummy_list=[]
             Time=QTime.currentTime()
@@ -502,10 +507,10 @@ class Ui_RobotGUI(object):
             statusRobot='Failed'
         status_finish=True
 
-    def callbackPower(self,data):
-        global powerValue  
-        powerValue=data.data
-        self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
+    # def callbackPower(self,data):
+    #     global powerValue  
+    #     powerValue=data.data
+    #     self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(powerValue+"%"))
 
     def callbackChangeAction(self,data):
         global changedata
@@ -699,15 +704,15 @@ class Ui_RobotGUI(object):
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.InitRobottableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         #inisialisasi roscore dan clean up pre process
-        os.system('killall roscore &')
-        time.sleep(2)
-        os.system('roscore &')
+        # os.system('killall roscore &')
+        # time.sleep(2)
+        # os.system('roscore &')
         """init node rospy GUI robot"""
         #AWALAN
         rospy.init_node('robot_ui',anonymous=False)
         print('masuk init node')
         rospy.Subscriber('status_topic',Bool,self.callbackStatus)
-        rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
+        # rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
         rospy.Subscriber('change_action',Int32,self.callbackChangeAction)
         
         print('topik subcriber sudah siap')
@@ -717,6 +722,7 @@ class Ui_RobotGUI(object):
         self.pubItems=rospy.Publisher('items_topic',String,queue_size=10)
         self.pubStringRT=rospy.Publisher('string_RT',String,queue_size=10)
         self.pubKelar=rospy.Publisher('kelar_kirim',Int32,queue_size=10)
+        # self.pubRviz=rospy.Publisher('Commander_rviz',Bool,queue_size=10)
         print('topik publish sudah siap')
 
 if __name__ == "__main__":
