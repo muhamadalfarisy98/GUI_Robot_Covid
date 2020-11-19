@@ -6,6 +6,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QDateTime, QDate,QTime,Qt
 from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QMessageBox,QWidget
 # from PyQt5.QtGui import *
 import socket
 import json
@@ -138,6 +139,14 @@ class Ui_RemoteUI(object):
         self.retranslateUi(RemoteUI)
         self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(RemoteUI)
+
+        
+    def closeEvent(self,event):
+        reply=QMessageBox.question(self,'Message','Wanna Quit?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)
+        if reply==QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
     """PUSHBUTTON ACTION"""
     def teleopAction(self):
         global flag
@@ -145,8 +154,9 @@ class Ui_RemoteUI(object):
         print('flag_tele_val',flag_tele)
         if flag==0 and flag_tele==1: #guarding
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
+            #menyalakan joystik
             os.system('roslaunch turtlebot3_teleop joystick_control.launch &')
-            #time.sleep(0.25)
+            time.sleep(0.25)
             #ganti ke packagenya turtleboit twist joy
             print('mode teleop')
             flag=2

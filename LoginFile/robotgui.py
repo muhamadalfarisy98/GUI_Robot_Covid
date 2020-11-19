@@ -213,11 +213,12 @@ class Ui_RobotGUI(object):
 #############################fungsi push button################
     def initAction(self):
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
-        #os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
-        #print('node bringup sudah terpanggil')
-        time.sleep(1)
+        os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
+        print('node bringup sudah terpanggil')
+        time.sleep(3)
         os.system('roslaunch covid_commander covid_commander.launch &')
         print('node covid_commander sudah terpanggil')
+        time.sleep(1)
         # butuh pemberitahuan kalau robot itu sudah siap digunakan
         self.InitRobottableWidget.setItem(0,0,QtWidgets.QTableWidgetItem('Robot Sudah Init'))
         # self.pubRviz.publish(True)
@@ -283,13 +284,14 @@ class Ui_RobotGUI(object):
                 laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
                 #PARSING POSISI TO COORDINATE HARDCODE-static
                 if  posisi == 'LSKK' or 'lskk' or 'Lskk':
-                    kordinat=[0.0,0.547,1.712, 0.816,0.0,0.0,0.576]
+                    kordinat=[0.0,0.547,1.712, 0.0,0.0,0.0,1.0]
                 elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
-                    kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
+                    #kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
+                    kordinat=[0.0,8.448,-0.905,0.0,0.0,0.0,1.0]
                 elif posisi == 'TA' or 'ta' or 'tugasakhir':
-                    kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
+                    kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
                 else:#kalau input dari user ngawur
-                    kordinat=[2.0,3.0,5.0, 0.1,0.3,0.5,1.0]
+                    kordinat=[2.0,3.0,5.0, 0.0,0.0,0.0,1.0]
                 p=Pose()
                 p.position.x=kordinat[0]
                 p.position.y=kordinat[1]
@@ -626,13 +628,14 @@ class Ui_RobotGUI(object):
         laci=int(self.tableWidgetPayloadStatus.item(0,0).text())
         #PARSING POSISI TO COORDINATE HARDCODE-static
         if  posisi == 'LSKK' or 'lskk' or 'Lskk':
-            kordinat=[0.0,0.547,1.712, 0.816,0.0,0.0,0.576]
+            # kordinat=[0.0,0.547,1.712, 0.816,0.0,0.0,0.576]
+            kordinat=[0.0,0.547,1.712, 0.0,0.0,0.0,1.0]
         elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
-            kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
+            kordinat=[0.0,8.448,-0.905, 0.0,0.0,0.0,1.0]
         elif posisi == 'TA' or 'ta' or 'tugasakhir':
-            kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
+            kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
         else:
-            kordinat=[1.0,6.0,2.0, 0.0,0.3,0.5,1.0]
+            kordinat=[1.0,6.0,2.0, 0.0,0.0,0.0,1.0]
         p=Pose()
         p.position.x=kordinat[0]
         p.position.y=kordinat[1]

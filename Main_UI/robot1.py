@@ -7,7 +7,9 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtCore import QEvent
+from PyQt5.QtGui import QCloseEvent
+from PyQt5.QtWidgets import QMessageBox,QWidget,QApplication
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
         RobotGUI.setObjectName("RobotGUI")
@@ -74,11 +76,19 @@ class Ui_RobotGUI(object):
         self.startButton.setGeometry(QtCore.QRect(180, 140, 201, 101))
         self.startButton.setObjectName("startButton")
         self.tabWidget.addTab(self.tab_3, "")
-
+        self.closeEvent(close)
         self.retranslateUi(RobotGUI)
         self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
-
+        
+    def closeEvent(self, event):
+        print('hehe')
+        reply = QMessageBox.question(self, 'Quit', 'Are you sure you want to quit?',
+        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
     def retranslateUi(self, RobotGUI):
         _translate = QtCore.QCoreApplication.translate
         RobotGUI.setWindowTitle(_translate("RobotGUI", "RobotGUI"))
@@ -91,7 +101,7 @@ class Ui_RobotGUI(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("RobotGUI", "Status Monitor"))
         self.startButton.setText(_translate("RobotGUI", "Start Robot ROS"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("RobotGUI", "Startup"))
-
+        
 
 if __name__ == "__main__":
     import sys
