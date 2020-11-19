@@ -294,6 +294,19 @@
       <string>Refresh</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="QuitButton">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>390</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Quit</string>
+     </property>
+    </widget>
    </widget>
   </widget>
  </widget>

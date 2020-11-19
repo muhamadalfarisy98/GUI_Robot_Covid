@@ -127,6 +127,9 @@ class Ui_RemoteUI(object):
         self.refreshModeButton = QtWidgets.QPushButton(self.tab_3)
         self.refreshModeButton.setGeometry(QtCore.QRect(100, 320, 131, 41))
         self.refreshModeButton.setObjectName("refreshModeButton")
+        self.QuitButton = QtWidgets.QPushButton(self.tab_3)
+        self.QuitButton.setGeometry(QtCore.QRect(250, 390, 89, 25))
+        self.QuitButton.setObjectName("QuitButton")
         self.tabWidget.addTab(self.tab_3, "")
         self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
         #Widget connection
@@ -135,19 +138,22 @@ class Ui_RemoteUI(object):
         self.navButton.clicked.connect(self.navAction)
         self.teleopButton.clicked.connect(self.teleopAction)
         self.refreshRobotButton.clicked.connect(self.refreshActionRobot)
+        self.QuitButton.clicked.connect(self.QuitAction)
         #MAIN WINDOW CMD
         self.retranslateUi(RemoteUI)
         self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(RemoteUI)
 
-        
-    def closeEvent(self,event):
-        reply=QMessageBox.question(self,'Message','Wanna Quit?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)
-        if reply==QMessageBox.Yes:
-            event.accept()
-        else:
-            event.ignore()
     """PUSHBUTTON ACTION"""
+    def QuitAction(self):
+        reply=QMessageBox.question(None,'Message','Wanna Quit?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)
+        if reply==QMessageBox.Yes:
+            os.system('killall robot_state_publisher map_server move_base roslaunch python')
+            time.sleep(0.5)
+            QtCore.QCoreApplication.instance().quit()
+        else:
+            print('nothing')
+        
     def teleopAction(self):
         global flag
         global flag_tele
@@ -353,7 +359,6 @@ class Ui_RemoteUI(object):
         print(my_new_list2)
         self.tableWidgetPayloadStatus.setRowCount(int(num))
 
-
     def retranslateUi(self, RemoteUI):
         _translate = QtCore.QCoreApplication.translate
         RemoteUI.setWindowTitle(_translate("RemoteUI", "RemoteUI"))
@@ -392,8 +397,8 @@ class Ui_RemoteUI(object):
         item = self.tableWidgetCekMode.horizontalHeaderItem(0)
         item.setText(_translate("RemoteUI", "Robot Action"))
         self.refreshModeButton.setText(_translate("RemoteUI", "Refresh"))
+        self.QuitButton.setText(_translate("RemoteUI", "Quit"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("RemoteUI", "Remote Action"))
-
         #lock table widget
         self.tableWidgetPayloadStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidgetRobotStatus.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -415,6 +420,7 @@ class Ui_RemoteUI(object):
         #if 1 maka navigasi diaktifkan, 0 maka navigasi ingin dihentikan
 
 #MAIN PROGRAM
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
@@ -423,3 +429,4 @@ if __name__ == "__main__":
     ui.setupUi(RemoteUI)
     RemoteUI.show()
     sys.exit(app.exec_())
+
