@@ -33,7 +33,7 @@ kelar=0
 saveTujuan=False
 changedata=4
 stringRT=''
-
+flag_init=False
 #CLASS GUI
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
@@ -214,14 +214,15 @@ class Ui_RobotGUI(object):
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
 #############################fungsi push button################
     def QuitAction(self):
-        reply=QtWidgets.QMessageBox.question(None,'Message','Wanna Quit?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)
+        reply=QtWidgets.QMessageBox.question(None,'Message','Wanna Quit?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QMessageBox.No)
         if reply==QtWidgets.QMessageBox.Yes:
             os.system('killall robot_state_publisher map_server move_base roslaunch python roscore')
-            time.sleep(0.5)
+            time.sleep(1)
             QtCore.QCoreApplication.instance().quit()
         else:
             print('nothing')
     def initAction(self):
+        global flag_init
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
         print('node bringup sudah terpanggil')
@@ -230,6 +231,8 @@ class Ui_RobotGUI(object):
         print('node covid_commander sudah terpanggil')
         time.sleep(1)
         # butuh pemberitahuan kalau robot itu sudah siap digunakan
+        flag_init=True
+        self.pubInitFlag.publish(flag_init)
         self.InitRobottableWidget.setItem(0,0,QtWidgets.QTableWidgetItem('Robot Sudah Init'))
         # self.pubRviz.publish(True)
     def startAction(self):
@@ -239,114 +242,119 @@ class Ui_RobotGUI(object):
         global kelar
         global stopMode
         global stringRT
-        stopMode=False
-        #guarding re-navigate
-        if kelar==1:
-            # stopMode=True
-            print('stop action')
-            print('harap mengisi kembali item tujuan payload')
-            QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
-            self.stopAction()
-            print('stop aksi')
-        else:
-            self.pubFlag.publish(1) # indikasi navigasi
-        sp_box_int=int(self.spinBoxNumItems.text())
-        """masuk ke eksekusi"""
-        #self.pubFlag.publish(1) # indikasi navigasi
-        #GUARDING navigate process
-        if count==1:
-            self.initKirim()
-            print('sekuens 1 selesai dikirim')
-        elif count!=1 and count<=sp_box_int and kelar!=1:
-            #harusnya kalau ditekan start lagi sudah otomatis nilai count nya tersimpan dari nilai counter yang sebelumnya
-            print('sekuens '+str(count)+ ' selesai dikirim')
-
-        #guarding point
-        while count<sp_box_int and stopMode==False and kelar==0:
-            #thread
-            dummy_list=[]
-            QApplication.processEvents()  
-            #Parsing waktu local
-            Time=QTime.currentTime()
-            Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-            #cek flag dari callback
-            if (status_finish==False):
-                QApplication.processEvents()  
-                continue
-            elif (status_finish==True):
-                QApplication.processEvents()  
-                #update di table widget statusnya
-                print('sekuens '+ str(count) +' selesai dieksekusi')
-                #assign udpate nilai ke tabel
-                """update tabel"""
-                self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-                self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-                """parsing realtime"""
-                dummy_list.append(count)
-                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,2).text())
-                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,3).text())
-                print('isi list yang mau diparsing', dummy_list)
-                stringRT= ' '.join([str(elem) for elem in dummy_list]) 
-                self.pubStringRT.publish(stringRT)
-                print('string Realtime berhasil dipublish')
-                #PARSING
-                posisi=self.tableWidgetPayloadStatus.item(count,1).text()
-                laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
-                #PARSING POSISI TO COORDINATE HARDCODE-static
-                if  posisi == 'LSKK' or 'lskk' or 'Lskk':
-                    kordinat=[0.0,0.547,1.712, 0.0,0.0,0.0,1.0]
-                elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
-                    #kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
-                    kordinat=[0.0,8.448,-0.905,0.0,0.0,0.0,1.0]
-                elif posisi == 'TA' or 'ta' or 'tugasakhir':
-                    kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
-                else:#kalau input dari user ngawur
-                    kordinat=[2.0,3.0,5.0, 0.0,0.0,0.0,1.0]
-                p=Pose()
-                p.position.x=kordinat[0]
-                p.position.y=kordinat[1]
-                p.position.z=kordinat[2]
-                p.orientation.x=kordinat[3]
-                p.orientation.y=kordinat[4]
-                p.orientation.z=kordinat[5]
-                p.orientation.w=kordinat[6]
-                #PUBLISH NODE COMMANDER
-                custom=Command()
-                custom.coordinate=p
-                custom.num.data=laci
-                self.pubCommander.publish(custom)  
-                print('sekuens '+ str(count+1) +' selesai dikirim')
-                count+=1
-            time.sleep(0.1)
-            #re-state
-            status_finish=False
-            print('counter ',count)
-        #parsing tabel index akhir
-        while (count==sp_box_int and kelar!=1):   
-            QApplication.processEvents()  
-            #sanity check
-            dummy_list=[]
-            Time=QTime.currentTime()
-            Timestr=Time.toString(Qt.DefaultLocaleShortDate)
-            if (status_finish==True): 
-                print('semua proses telah selesai dikerjakan')
-                self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
-                self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
-                """parsing realtime"""
-                dummy_list.append(count)
-                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,2).text())
-                dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,3).text())
-                print('isi list yang mau diparsing', dummy_list)
-                stringRT= ' '.join([str(elem) for elem in dummy_list]) 
-                self.pubStringRT.publish(stringRT)
-                print('string Realtime berhasil dipublish')
-
-                kelar=1 #flag parsing dan tanda udah selesai seluru sekuens navigasi
-                self.pubKelar.publish(kelar)
-                print('nilai kelar',kelar)
-                status_finish=False
+        global flag_init
+        #guarding init udah dilakuin apa belum?
+        if (flag_init==True):
+            stopMode=False
+            #guarding re-navigate
+            if kelar==1:
+                # stopMode=True
+                print('stop action')
+                print('harap mengisi kembali item tujuan payload')
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
                 self.stopAction()
-                break
+                print('stop aksi')
+            else:
+                self.pubFlag.publish(1) # indikasi navigasi
+            sp_box_int=int(self.spinBoxNumItems.text())
+            """masuk ke eksekusi"""
+            #self.pubFlag.publish(1) # indikasi navigasi
+            #GUARDING navigate process
+            if count==1:
+                self.initKirim()
+                print('sekuens 1 selesai dikirim')
+            elif count!=1 and count<=sp_box_int and kelar!=1:
+                #harusnya kalau ditekan start lagi sudah otomatis nilai count nya tersimpan dari nilai counter yang sebelumnya
+                print('sekuens '+str(count)+ ' selesai dikirim')
+
+            #guarding point
+            while count<sp_box_int and stopMode==False and kelar==0:
+                #thread
+                dummy_list=[]
+                QApplication.processEvents()  
+                #Parsing waktu local
+                Time=QTime.currentTime()
+                Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+                #cek flag dari callback
+                if (status_finish==False):
+                    QApplication.processEvents()  
+                    continue
+                elif (status_finish==True):
+                    QApplication.processEvents()  
+                    #update di table widget statusnya
+                    print('sekuens '+ str(count) +' selesai dieksekusi')
+                    #assign udpate nilai ke tabel
+                    """update tabel"""
+                    self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+                    self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                    """parsing realtime"""
+                    dummy_list.append(count)
+                    dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,2).text())
+                    dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,3).text())
+                    print('isi list yang mau diparsing', dummy_list)
+                    stringRT= ' '.join([str(elem) for elem in dummy_list]) 
+                    self.pubStringRT.publish(stringRT)
+                    print('string Realtime berhasil dipublish')
+                    #PARSING
+                    posisi=self.tableWidgetPayloadStatus.item(count,1).text()
+                    laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
+                    #PARSING POSISI TO COORDINATE HARDCODE-static
+                    if  posisi == 'LSKK' or 'lskk' or 'Lskk':
+                        kordinat=[0.0,0.547,1.712, 0.0,0.0,0.0,1.0]
+                    elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
+                        #kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
+                        kordinat=[0.0,8.448,-0.905,0.0,0.0,0.0,1.0]
+                    elif posisi == 'TA' or 'ta' or 'tugasakhir':
+                        kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
+                    else:#kalau input dari user ngawur
+                        kordinat=[2.0,3.0,5.0, 0.0,0.0,0.0,1.0]
+                    p=Pose()
+                    p.position.x=kordinat[0]
+                    p.position.y=kordinat[1]
+                    p.position.z=kordinat[2]
+                    p.orientation.x=kordinat[3]
+                    p.orientation.y=kordinat[4]
+                    p.orientation.z=kordinat[5]
+                    p.orientation.w=kordinat[6]
+                    #PUBLISH NODE COMMANDER
+                    custom=Command()
+                    custom.coordinate=p
+                    custom.num.data=laci
+                    self.pubCommander.publish(custom)  
+                    print('sekuens '+ str(count+1) +' selesai dikirim')
+                    count+=1
+                time.sleep(0.1)
+                #re-state
+                status_finish=False
+                print('counter ',count)
+            #parsing tabel index akhir
+            while (count==sp_box_int and kelar!=1):   
+                QApplication.processEvents()  
+                #sanity check
+                dummy_list=[]
+                Time=QTime.currentTime()
+                Timestr=Time.toString(Qt.DefaultLocaleShortDate)
+                if (status_finish==True): 
+                    print('semua proses telah selesai dikerjakan')
+                    self.tableWidgetPayloadStatus.setItem(count-1,2,QtWidgets.QTableWidgetItem(statusRobot)) 
+                    self.tableWidgetPayloadStatus.setItem(count-1,3,QtWidgets.QTableWidgetItem(Timestr)) 
+                    """parsing realtime"""
+                    dummy_list.append(count)
+                    dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,2).text())
+                    dummy_list.append(self.tableWidgetPayloadStatus.item(count-1,3).text())
+                    print('isi list yang mau diparsing', dummy_list)
+                    stringRT= ' '.join([str(elem) for elem in dummy_list]) 
+                    self.pubStringRT.publish(stringRT)
+                    print('string Realtime berhasil dipublish')
+
+                    kelar=1 #flag parsing dan tanda udah selesai seluru sekuens navigasi
+                    self.pubKelar.publish(kelar)
+                    print('nilai kelar',kelar)
+                    status_finish=False
+                    self.stopAction()
+                    break
+        else:
+            QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
 
     def stopAction(self):
         global stopMode
@@ -737,7 +745,7 @@ class Ui_RobotGUI(object):
         self.pubItems=rospy.Publisher('items_topic',String,queue_size=10)
         self.pubStringRT=rospy.Publisher('string_RT',String,queue_size=10)
         self.pubKelar=rospy.Publisher('kelar_kirim',Int32,queue_size=10)
-        # self.pubRviz=rospy.Publisher('Commander_rviz',Bool,queue_size=10)
+        self.pubInitFlag=rospy.Publisher('flag_init',Bool,queue_size=10)
         print('topik publish sudah siap')
 
 

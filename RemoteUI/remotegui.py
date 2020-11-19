@@ -27,6 +27,7 @@ num=0
 flag=0
 flag_tele=1 #default state
 kelar=0
+flag_init=False
 
 class Ui_RemoteUI(object):
     def setupUi(self, RemoteUI):
@@ -157,41 +158,50 @@ class Ui_RemoteUI(object):
     def teleopAction(self):
         global flag
         global flag_tele
-        print('flag_tele_val',flag_tele)
-        if flag==0 and flag_tele==1: #guarding
-            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
-            #menyalakan joystik
-            os.system('roslaunch turtlebot3_teleop joystick_control.launch &')
-            time.sleep(0.25)
-            #ganti ke packagenya turtleboit twist joy
-            print('mode teleop')
-            flag=2
+        global flag_init
+
+        if (flag_init==True):
+            print('flag_tele_val',flag_tele)
+            if flag==0 and flag_tele==1: #guarding
+                self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Teleoperation Mode'))
+                #menyalakan joystik
+                os.system('roslaunch turtlebot3_teleop joystick_control.launch &')
+                time.sleep(0.25)
+                #ganti ke packagenya turtleboit twist joy
+                print('mode teleop')
+                flag=2
+            else:
+                print('harus kembali ke idle dahulu')
+                print('flag ',flag)
+                #kasih popup message
+                w=str(self.tableWidgetCekMode.item(0,0).text())
+                QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
         else:
-            print('harus kembali ke idle dahulu')
-            print('flag ',flag)
-            #kasih popup message
-            w=str(self.tableWidgetCekMode.item(0,0).text())
-            QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
+            QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
 
     def navAction(self):
         global flag
         global kelar
-        stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
+        global flag_init
+        if(flag_init==True):
+            stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
 
-        if flag==0 and stop_nav=='Idle Mode' and kelar==0 : #guarding
-            self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
-            self.pubChangeAction.publish(1)
-            print('mode navigasi')
-            flag=1
-            #ngirim topic ke robot gui bahwa node navigasi ingin dilakukan pengiriman
-        elif flag==0 and stop_nav=='Idle Mode' and kelar==1:
-            QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
+            if flag==0 and stop_nav=='Idle Mode' and kelar==0 : #guarding
+                self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Navigation Mode'))
+                self.pubChangeAction.publish(1)
+                print('mode navigasi')
+                flag=1
+                #ngirim topic ke robot gui bahwa node navigasi ingin dilakukan pengiriman
+            elif flag==0 and stop_nav=='Idle Mode' and kelar==1:
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
+            else:
+                print('harus kembali ke idle dahulu')
+                print('flag ',flag)
+                w=str(self.tableWidgetCekMode.item(0,0).text())
+                #kasih popup message
+                QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
         else:
-            print('harus kembali ke idle dahulu')
-            print('flag ',flag)
-            w=str(self.tableWidgetCekMode.item(0,0).text())
-            #kasih popup message
-            QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
+            QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
 
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
@@ -233,6 +243,10 @@ class Ui_RemoteUI(object):
         a=str(self.tableWidgetCekMode.item(0,0).text())
         self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem(a))
         print('On going action : '+a)
+
+    def callbackFlaginit(self,data):
+        global flag_init
+        flag_init=data.data
 
     def callbackFlagAction(self,data):
         global flag
@@ -415,6 +429,7 @@ class Ui_RemoteUI(object):
         rospy.Subscriber('flag_action',Int32,self.callbackFlagAction)
         rospy.Subscriber('string_RT',String,self.callbackStringRT)
         rospy.Subscriber('kelar_kirim',Int32,self.callbackKelarKirim)
+        rospy.Subscriber('flag_init',Bool,self.callbackFlaginit)
         #init ros publisher
         self.pubChangeAction=rospy.Publisher('change_action',Int32,queue_size=10)
         #if 1 maka navigasi diaktifkan, 0 maka navigasi ingin dihentikan
