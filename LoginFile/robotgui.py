@@ -306,6 +306,12 @@ class Ui_RobotGUI(object):
                         kordinat=[0.0,8.448,-0.905,0.0,0.0,0.0,1.0]
                     elif posisi == 'TA' or 'ta' or 'tugasakhir':
                         kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
+                    elif posisi == 'pose1':
+                        kordinat=[-1.03,-1.65,0.0 ,0.0 ,0.0, 0.0 ,1.0]
+                    elif posisi == 'pose2':
+                        kordinat=[3.1,-1.6,0.0, 0.0, 0.0,0.0, 1.0]
+                    elif posisi =='pose3':
+                        kordinat=[1.17, -3.4, 0.0 , 0.0, 0.0, 0.0,1.0]
                     else:#kalau input dari user ngawur
                         kordinat=[2.0,3.0,5.0, 0.0,0.0,0.0,1.0]
                     p=Pose()
@@ -652,6 +658,12 @@ class Ui_RobotGUI(object):
             kordinat=[0.0,8.448,-0.905, 0.0,0.0,0.0,1.0]
         elif posisi == 'TA' or 'ta' or 'tugasakhir':
             kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
+        elif posisi == 'pose1':
+            kordinat=[-1.03,-1.65,0.0 ,0.0 ,0.0, 0.0 ,1.0]
+        elif posisi == 'pose2':
+            kordinat=[3.1,-1.6,0.0, 0.0, 0.0,0.0, 1.0]
+        elif posisi =='pose3':
+            kordinat=[1.17, -3.4, 0.0 , 0.0, 0.0, 0.0,1.0]
         else:
             kordinat=[1.0,6.0,2.0, 0.0,0.0,0.0,1.0]
         p=Pose()
