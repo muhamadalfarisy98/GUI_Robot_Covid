@@ -299,12 +299,12 @@ class Ui_RobotGUI(object):
                     posisi=self.tableWidgetPayloadStatus.item(count,1).text()
                     laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
                     #PARSING POSISI TO COORDINATE HARDCODE-static
-                    if  posisi == 'LSKK' or 'lskk' or 'Lskk':
-                        kordinat=[0.0,0.547,1.712, 0.0,0.0,0.0,1.0]
-                    elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
+                    if  posisi == 'LSKK':
+                        kordinat=[1.0,0.547,0.0, 0.0,0.0,0.0,1.0]
+                    elif posisi == 'Mekanikal':
                         #kordinat=[0.0,8.448,-0.905, -0.576,0.0,0.0,0.817]
-                        kordinat=[0.0,8.448,-0.905,0.0,0.0,0.0,1.0]
-                    elif posisi == 'TA' or 'ta' or 'tugasakhir':
+                        kordinat=[1.0,8.448,0.0,0.0,0.0,0.0,1.0]
+                    elif posisi == 'TA' :
                         kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
                     elif posisi == 'pose1':
                         kordinat=[-1.03,-1.65,0.0 ,0.0 ,0.0, 0.0 ,1.0]
@@ -651,12 +651,12 @@ class Ui_RobotGUI(object):
         posisi=self.tableWidgetPayloadStatus.item(0,1).text()
         laci=int(self.tableWidgetPayloadStatus.item(0,0).text())
         #PARSING POSISI TO COORDINATE HARDCODE-static
-        if  posisi == 'LSKK' or 'lskk' or 'Lskk':
+        if  posisi == 'LSKK':
             # kordinat=[0.0,0.547,1.712, 0.816,0.0,0.0,0.576]
-            kordinat=[0.0,0.547,1.712, 0.0,0.0,0.0,1.0]
-        elif posisi == 'Mekanikal' or 'mekanikal' or 'MEKANIKAL':
-            kordinat=[0.0,8.448,-0.905, 0.0,0.0,0.0,1.0]
-        elif posisi == 'TA' or 'ta' or 'tugasakhir':
+            kordinat=[1.0,0.547,0.0, 0.0,0.0,0.0,1.0]
+        elif posisi == 'Mekanikal':
+            kordinat=[1.0,8.448,0.0, 0.0,0.0,0.0,1.0]
+        elif posisi == 'TA':
             kordinat=[1.0,6.0,0.0,0.0,0.0,0.0,1.0]
         elif posisi == 'pose1':
             kordinat=[-1.03,-1.65,0.0 ,0.0 ,0.0, 0.0 ,1.0]
