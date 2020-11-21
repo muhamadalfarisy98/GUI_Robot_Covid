@@ -217,17 +217,17 @@ class Ui_RobotGUI(object):
         reply=QtWidgets.QMessageBox.question(None,'Message','Wanna Quit?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QMessageBox.No)
         if reply==QtWidgets.QMessageBox.Yes:
             os.system('killall robot_state_publisher map_server move_base roslaunch python roscore')
-            time.sleep(1)
+            time.sleep(2)
             QtCore.QCoreApplication.instance().quit()
         else:
             print('nothing')
     def initAction(self):
         global flag_init
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
-        os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
+        #os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
         print('node bringup sudah terpanggil')
         time.sleep(3)
-        os.system('roslaunch covid_commander covid_commander.launch &')
+        #os.system('roslaunch covid_commander covid_commander.launch &')
         print('node covid_commander sudah terpanggil')
         time.sleep(1)
         # butuh pemberitahuan kalau robot itu sudah siap digunakan
@@ -258,7 +258,7 @@ class Ui_RobotGUI(object):
                 self.pubFlag.publish(1) # indikasi navigasi
             sp_box_int=int(self.spinBoxNumItems.text())
             """masuk ke eksekusi"""
-            #self.pubFlag.publish(1) # indikasi navigasi
+           
             #GUARDING navigate process
             if count==1:
                 self.initKirim()
@@ -370,13 +370,13 @@ class Ui_RobotGUI(object):
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
         """SEMENTARA DI COMMENT"""
-        # rospy.wait_for_service('cancel_task')
-        # try:
-        #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
-        #     final_val=xyz()
-        #     print(final_val.success)
-        # except rospy.ServiceException as e:
-        #     print(e)
+        rospy.wait_for_service('cancel_task')
+        try:
+            xyz=rospy.ServiceProxy('cancel_task', Trigger)
+            final_val=xyz()
+            print(final_val.success)
+        except rospy.ServiceException as e:
+            print(e)
 
 
     def refreshAction(self):
@@ -532,7 +532,7 @@ class Ui_RobotGUI(object):
         else:
             statusRobot='Failed'
         status_finish=True
-
+    """kalau masalah di MCU udah clear bisa pakai ini"""
     # def callbackPower(self,data):
     #     global powerValue  
     #     powerValue=data.data
@@ -552,6 +552,7 @@ class Ui_RobotGUI(object):
             print('exe 0')
             #self.stopAction()
             self.stopActionRemote()
+
     """CALL-BACK FUNCTION"""    
     def stopActionRemote(self):
         global stopMode
@@ -560,13 +561,13 @@ class Ui_RobotGUI(object):
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
         """SEMENTARA DI COMMENT"""
-        # rospy.wait_for_service('cancel_task')
-        # try:
-        #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
-        #     final_val=xyz()
-        #     print(final_val.success)
-        # except rospy.ServiceException as e:
-        #     print(e)
+        rospy.wait_for_service('cancel_task')
+        try:
+            xyz=rospy.ServiceProxy('cancel_task', Trigger)
+            final_val=xyz()
+            print(final_val.success)
+        except rospy.ServiceException as e:
+            print(e)
 
 
 
