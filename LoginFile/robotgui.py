@@ -34,6 +34,7 @@ saveTujuan=False
 changedata=4
 stringRT=''
 flag_init=False
+flag_stop_message=False
 #CLASS GUI
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
@@ -214,7 +215,7 @@ class Ui_RobotGUI(object):
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
 #############################fungsi push button################
     def QuitAction(self):
-        reply=QtWidgets.QMessageBox.question(None,'Message','Wanna Quit?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QMessageBox.No)
+        reply=QtWidgets.QMessageBox.question(None,'Message','Wanna Quit?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QtWidgets.QMessageBox.No)
         if reply==QtWidgets.QMessageBox.Yes:
             os.system('killall robot_state_publisher map_server move_base roslaunch python roscore')
             time.sleep(2)
@@ -235,6 +236,7 @@ class Ui_RobotGUI(object):
         self.pubInitFlag.publish(flag_init)
         self.InitRobottableWidget.setItem(0,0,QtWidgets.QTableWidgetItem('Robot Sudah Init'))
         # self.pubRviz.publish(True)
+
     def startAction(self):
         global count
         global status_finish
@@ -243,6 +245,7 @@ class Ui_RobotGUI(object):
         global stopMode
         global stringRT
         global flag_init
+        global flag_stop_message
         #guarding init udah dilakuin apa belum?
         if (flag_init==True):
             stopMode=False
@@ -252,7 +255,8 @@ class Ui_RobotGUI(object):
                 print('stop action')
                 print('harap mengisi kembali item tujuan payload')
                 QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
-                self.stopAction()
+                flag_stop_message=True
+                self.stopAction() #kepanggil disini 
                 print('stop aksi')
             else:
                 self.pubFlag.publish(1) # indikasi navigasi
@@ -260,7 +264,7 @@ class Ui_RobotGUI(object):
             """masuk ke eksekusi"""
            
             #GUARDING navigate process
-            if count==1:
+            if count==1 and kelar==0:
                 self.initKirim()
                 print('sekuens 1 selesai dikirim')
             elif count!=1 and count<=sp_box_int and kelar!=1:
@@ -363,7 +367,12 @@ class Ui_RobotGUI(object):
             QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
 
     def stopAction(self):
+        """kepinginnya ada dua kondisi yang bisa dilakukan yaitu pause dan stop sekuens sehingga mulai dari awal"""
         global stopMode
+        global kelar
+        global count
+        global flag_stop_message
+
         stopMode=True
         print("Stop action")     
         self.pubFlag.publish(0)
@@ -378,7 +387,16 @@ class Ui_RobotGUI(object):
         except rospy.ServiceException as e:
             print(e)
 
-
+        #kalau dia stop beneran maka count==1,kelar =1
+        #masukin popup
+        if flag_stop_message==False and kelar!=1:
+            reply=QtWidgets.QMessageBox.question(None,'Message','Stop(Yes)/Pause(No)?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QtWidgets.QMessageBox.No)
+            if reply==QtWidgets.QMessageBox.Yes:
+                count=1
+                kelar=1 #kudu input dari awal  
+            else:
+                print('nothing')
+        flag_stop_message=False
     def refreshAction(self):
         global kelar
         global saveTujuan
