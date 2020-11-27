@@ -27,14 +27,16 @@ status1=False
 count=1
 status_finish=False
 statusRobot=''
-remote_nav=1
 stopMode=False
 kelar=0
 saveTujuan=False
 changedata=4
 stringRT=''
 flag_init=False
-flag_stop_message=False
+flag_isi=False
+w=1 #flag isi indikator true
+flag_stop_remote=False
+stop_pause=4
 #CLASS GUI
 class Ui_RobotGUI(object):
     def setupUi(self, RobotGUI):
@@ -213,6 +215,7 @@ class Ui_RobotGUI(object):
         self.retranslateUi(RobotGUI)
         self.tabWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(RobotGUI)
+
 #############################fungsi push button################
     def QuitAction(self):
         reply=QtWidgets.QMessageBox.question(None,'Message','Wanna Quit?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QtWidgets.QMessageBox.No)
@@ -222,12 +225,13 @@ class Ui_RobotGUI(object):
             QtCore.QCoreApplication.instance().quit()
         else:
             print('nothing')
+
     def initAction(self):
         global flag_init
         """INISIASI NODE ROBOT BRINGUP DAN NODE CMD"""
         #os.system('roslaunch turtlebot3_bringup covid_robot.launch &')
         print('node bringup sudah terpanggil')
-        time.sleep(3)
+        time.sleep(2)
         #os.system('roslaunch covid_commander covid_commander.launch &')
         print('node covid_commander sudah terpanggil')
         time.sleep(1)
@@ -245,19 +249,22 @@ class Ui_RobotGUI(object):
         global stopMode
         global stringRT
         global flag_init
-        global flag_stop_message
+        global flag_isi
+        global changedata
+        global flag_stop_remote
         #guarding init udah dilakuin apa belum?
-        if (flag_init==True):
+        if (flag_init==True and flag_isi==True):
             stopMode=False
             #guarding re-navigate
             if kelar==1:
-                # stopMode=True
+                stopMode=True
                 print('stop action')
-                print('harap mengisi kembali item tujuan payload')
                 QtWidgets.QMessageBox.critical(None,'Fail','Harap mengisi kembali item tujuan payload')
-                flag_stop_message=True
-                self.stopAction() #kepanggil disini 
-                print('stop aksi')
+                #self.stopAction() #kepanggil disini 
+                time.sleep(0.5)
+                self.pubFlag.publish(0) #indikasi mode stop/ idle mode
+                print('stop aksi, refill payload')
+
             else:
                 self.pubFlag.publish(1) # indikasi navigasi
             sp_box_int=int(self.spinBoxNumItems.text())
@@ -267,12 +274,12 @@ class Ui_RobotGUI(object):
             if count==1 and kelar==0:
                 self.initKirim()
                 print('sekuens 1 selesai dikirim')
-            elif count!=1 and count<=sp_box_int and kelar!=1:
+            elif count!=1 and count<=sp_box_int and kelar==0:
                 #harusnya kalau ditekan start lagi sudah otomatis nilai count nya tersimpan dari nilai counter yang sebelumnya
                 print('sekuens '+str(count)+ ' selesai dikirim')
 
             #guarding point
-            while count<sp_box_int and stopMode==False and kelar==0:
+            while (count<sp_box_int and stopMode==False and kelar==0):
                 #thread
                 dummy_list=[]
                 QApplication.processEvents()  
@@ -300,8 +307,8 @@ class Ui_RobotGUI(object):
                     self.pubStringRT.publish(stringRT)
                     print('string Realtime berhasil dipublish')
                     #PARSING
-                    posisi=self.tableWidgetPayloadStatus.item(count,1).text()
-                    laci=int(self.tableWidgetPayloadStatus.item(count,0).text())
+                    posisi=self.tableWidgetTujuan.item(count,1).text()
+                    laci=int(self.tableWidgetTujuan.item(count,0).text())
                     #PARSING POSISI TO COORDINATE HARDCODE-static
                     if  posisi == 'LSKK':
                         kordinat=[1.0,0.547,0.0, 0.0,0.0,0.0,1.0]
@@ -336,9 +343,10 @@ class Ui_RobotGUI(object):
                 time.sleep(0.1)
                 #re-state
                 status_finish=False
-                print('counter ',count)
+                print('counter: ',count)
+
             #parsing tabel index akhir
-            while (count==sp_box_int and kelar!=1):   
+            while (count==sp_box_int and kelar!=1 and stopMode==False ):   
                 QApplication.processEvents()  
                 #sanity check
                 dummy_list=[]
@@ -361,21 +369,39 @@ class Ui_RobotGUI(object):
                     self.pubKelar.publish(kelar)
                     print('nilai kelar',kelar)
                     status_finish=False
+                    """INDIKATOR STOP"""
                     self.stopAction()
                     break
+            if flag_stop_remote==True:
+                flag_stop_remote=False#re-state
+                #stop dari remote active
+                self.stopActionRemote()
         else:
-            QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
+            if (flag_init==True and flag_isi==False):
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap isi payload robot terlebih dahulu')
+            elif (flag_init==False and flag_isi==True):
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
+            else:
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot dan isi payload terlebih dahulu')
 
     def stopAction(self):
         """kepinginnya ada dua kondisi yang bisa dilakukan yaitu pause dan stop sekuens sehingga mulai dari awal"""
         global stopMode
         global kelar
         global count
-        global flag_stop_message
-
         stopMode=True
         print("Stop action")     
+        #stop manual dari robot
         self.pubFlag.publish(0)
+        #kalau dia stop beneran maka count==1,kelar =1
+        #masukin popup
+        if kelar!=1:
+            reply=QtWidgets.QMessageBox.question(None,'Message','Stop(Yes)/Pause(No)?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QtWidgets.QMessageBox.No)
+            if reply==QtWidgets.QMessageBox.Yes:
+                count=1 #sekuensi item dari indeks awal
+                kelar=1 #kudu input dari awal  
+            else:
+                print('pause, klik start to continue navigate')
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
         """SEMENTARA DI COMMENT"""
@@ -387,16 +413,8 @@ class Ui_RobotGUI(object):
         except rospy.ServiceException as e:
             print(e)
 
-        #kalau dia stop beneran maka count==1,kelar =1
-        #masukin popup
-        if flag_stop_message==False and kelar!=1:
-            reply=QtWidgets.QMessageBox.question(None,'Message','Stop(Yes)/Pause(No)?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QtWidgets.QMessageBox.No)
-            if reply==QtWidgets.QMessageBox.Yes:
-                count=1
-                kelar=1 #kudu input dari awal  
-            else:
-                print('nothing')
-        flag_stop_message=False
+
+        
     def refreshAction(self):
         global kelar
         global saveTujuan
@@ -426,7 +444,7 @@ class Ui_RobotGUI(object):
             statKelar=str('Sudah selesai')
             print('Kondisi navigasi '+statKelar)
         else:
-            print(kelar)
+            print('status belum selesai dieksekusi semua ',kelar)
 
         if saveTujuan==False:
             if kelar==1:
@@ -515,7 +533,7 @@ class Ui_RobotGUI(object):
         if saveTujuan==True:
             kelar=0
             if kelar==0:
-                print(kelar)
+                print('Baru selesai di save terbaru',kelar)
                 #---- status handling
                 """
                     status nya ada = {Done, ongoing,pending}
@@ -559,24 +577,42 @@ class Ui_RobotGUI(object):
     def callbackChangeAction(self,data):
         global changedata
         changedata=data.data 
-        print(changedata)
-        # global stopMode
         """GUARDING CHANGE DATA VALUE"""
         if changedata==1:
-            print('exe 1')
+            changedata=4
+            print('Navigasi remote start') 
             self.startAction()
 
-        elif changedata==0:
-            print('exe 0')
-            #self.stopAction()
-            self.stopActionRemote()
-
+    def callbackChangeStop(self,data):
+        global stopMode
+        global hehe
+        global flag_stop_remote
+        global stop_pause
+        hehe=data.data 
+        if hehe==0:
+            stop_pause=0
+            print('masuk stop')
+        elif hehe==1:
+            stop_pause=1
+            print('masuk pause')   
+        flag_stop_remote=True
+        stopMode=True     
     """CALL-BACK FUNCTION"""    
+
     def stopActionRemote(self):
         global stopMode
-        stopMode=True
-        print("Stop action")     
+        global kelar
+        global stop_pause
+        global count
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
+        if stop_pause==0:
+            count=1
+            kelar=1
+            print('bersiap input payload dari awal')
+        elif stop_pause==1:
+            print('pause, klik start to continue navigate')
+        stop_pause=4#re-state
+        print("Stop action remote")  
         #eksperimen service
         """SEMENTARA DI COMMENT"""
         rospy.wait_for_service('cancel_task')
@@ -587,23 +623,21 @@ class Ui_RobotGUI(object):
         except rospy.ServiceException as e:
             print(e)
 
-
-
     def addAction(self):
         #SpinBox
         sp_box=self.spinBoxNumItems.text()
-        print(sp_box) #ntar bakal dipakai buat max index rows
+        print('Banyak item: ',sp_box) #ntar bakal dipakai buat max index rows
         self.tableWidgetTujuan.setRowCount(int(sp_box))
                 ########################################
         cb_payload=self.comboBoxPayload.currentText()
-        print(cb_payload)
+        print('Jenis payload: ',cb_payload)
 
         ###############################ROS PARAM KE REMOTE GUI
         my_items=[]
         my_items.append(sp_box)
         my_items.append(cb_payload)
         listTostr3= ' '.join([str(elem) for elem in my_items]) 
-        print('isi list 3', listTostr3)
+        print('parsing json item: ', listTostr3)
         self.pubItems.publish(listTostr3)
         ###############################ROS PARAM KE REMOTE GUI
      
@@ -613,6 +647,8 @@ class Ui_RobotGUI(object):
         global saveTujuan
         global kelar
         global count
+        global flag_isi
+        global w
         if kelar==1:
             print('reinput value berhasil')
             count=1
@@ -663,12 +699,18 @@ class Ui_RobotGUI(object):
         print(listTostr1)
         self.pubJsonTopic.publish(listTostr1)
         print('Parsing ke remote gui')
+        #Once eksekusi
+        
+        while w==1:
+            flag_isi=True
+            self.pubFlagIsi.publish(flag_isi)
+            w+=1
 
     def initKirim(self):
         # kordinat=[]
         """ROS PARAMETER PENGIRIMAN STATUS DAN LOKASI ATAUPUN KOORDINAT"""
-        posisi=self.tableWidgetPayloadStatus.item(0,1).text()
-        laci=int(self.tableWidgetPayloadStatus.item(0,0).text())
+        posisi=self.tableWidgetTujuan.item(0,1).text()
+        laci=int(self.tableWidgetTujuan.item(0,0).text())
         #PARSING POSISI TO COORDINATE HARDCODE-static
         if  posisi == 'LSKK':
             # kordinat=[0.0,0.547,1.712, 0.816,0.0,0.0,0.576]
@@ -765,11 +807,13 @@ class Ui_RobotGUI(object):
         #AWALAN
         rospy.init_node('robot_ui',anonymous=False)
         print('masuk init node')
+        """subscriber"""
         rospy.Subscriber('status_topic',Bool,self.callbackStatus)
         # rospy.Subscriber('voltage_bat',Float32,self.callbackPower)
         rospy.Subscriber('change_action',Int32,self.callbackChangeAction)
-        
+        rospy.Subscriber('change_stop',Int32,self.callbackChangeStop)
         print('topik subcriber sudah siap')
+        """PUBLISHER"""
         self.pubCommander=rospy.Publisher('command_topic',Command,queue_size=10)
         self.pubFlag=rospy.Publisher('flag_action',Int32,queue_size=10)
         self.pubJsonTopic=rospy.Publisher('Json_Topic',String,queue_size=10)
@@ -777,6 +821,7 @@ class Ui_RobotGUI(object):
         self.pubStringRT=rospy.Publisher('string_RT',String,queue_size=10)
         self.pubKelar=rospy.Publisher('kelar_kirim',Int32,queue_size=10)
         self.pubInitFlag=rospy.Publisher('flag_init',Bool,queue_size=10)
+        self.pubFlagIsi=rospy.Publisher('flag_isi',Bool,queue_size=10)
         print('topik publish sudah siap')
 
 

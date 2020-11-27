@@ -28,7 +28,7 @@ flag=0
 flag_tele=1 #default state
 kelar=0
 flag_init=False
-
+flag_isi=False
 class Ui_RemoteUI(object):
     def setupUi(self, RemoteUI):
         RemoteUI.setObjectName("RemoteUI")
@@ -159,7 +159,7 @@ class Ui_RemoteUI(object):
         global flag
         global flag_tele
         global flag_init
-
+        
         if (flag_init==True):
             print('flag_tele_val',flag_tele)
             if flag==0 and flag_tele==1: #guarding
@@ -183,7 +183,8 @@ class Ui_RemoteUI(object):
         global flag
         global kelar
         global flag_init
-        if(flag_init==True):
+        global flag_isi
+        if(flag_init==True and flag_isi==True):
             stop_nav=str(self.tableWidgetCekMode.item(0,0).text())
 
             if flag==0 and stop_nav=='Idle Mode' and kelar==0 : #guarding
@@ -201,7 +202,12 @@ class Ui_RemoteUI(object):
                 #kasih popup message
                 QtWidgets.QMessageBox.critical(None,'Fail',w+' is still running')
         else:
-            QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
+            if (flag_init==True and flag_isi==False):
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap isi payload robot terlebih dahulu')
+            elif (flag_init==False and flag_isi==True):
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot terlebih dahulu')
+            else:
+                QtWidgets.QMessageBox.critical(None,'Fail','Harap init robot dan isi payload terlebih dahulu')
 
     def changeAction(self):
         #Terminate aksi yang sedang berjalan
@@ -210,14 +216,18 @@ class Ui_RemoteUI(object):
         stop_nav=str(self.tableWidgetCekMode.item(0,0).text()) #ngambil kondisi sekarang ditabel sedang apa
         if (stop_nav=='Teleoperation Mode'):
             os.system('rosnode kill teleop_twist_joy &')
-            self.pubChangeAction.publish(0)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
             flag_tele=1
             print(stop_nav+' Dimatikan')
 
         elif (stop_nav=='Navigation Mode'):
         #   mengirim topik ke robot gui bahwa node navigasi ingin dimatikan
-            self.pubChangeAction.publish(0)
+            reply=QtWidgets.QMessageBox.question(None,'Message','Stop(Yes)/Pause(No)?',QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No,QtWidgets.QMessageBox.No)
+            if reply==QtWidgets.QMessageBox.Yes:
+                self.pubChangeStop.publish(0) #mau stop
+            else:
+                self.pubChangeStop.publish(1) #mau pause aja
+            time.sleep(1)
             self.tableWidgetCekMode.setItem(0,0,QtWidgets.QTableWidgetItem('Idle Mode'))
             print(stop_nav+' Dimatikan')
         else:
@@ -252,6 +262,7 @@ class Ui_RemoteUI(object):
         global flag
         global flag_tele
         flag=data.data
+        #baca kondisi robot melalui tabel widget
         navmode=str(self.tableWidgetCekMode.item(0,0).text())
         if flag==1:
             print('menjalankan navigasi mode')
@@ -282,7 +293,6 @@ class Ui_RemoteUI(object):
     def callbackKelarKirim(self,data):
         global kelar
         kelar=data.data
-        print('subscriber kelar',kelar)
 
     def callbackStringRT(self,data):
         global string_RT
@@ -357,6 +367,12 @@ class Ui_RemoteUI(object):
     #     powerValue=data.data
     #     str_pow=str(powerValue)
     #     self.tableWidgetRobotStatus.setItem(0,0,QtWidgets.QTableWidgetItem(str_pow+"%"))
+    def callbackFlagisi(self,data):
+        global flag_isi_terima
+        global flag_isi
+        flag_isi_terima=data.data 
+        if flag_isi_terima==True:
+            flag_isi=True
 
     def callbackPayloadtype(self,data):
         global stringFile2
@@ -422,7 +438,7 @@ class Ui_RemoteUI(object):
         # os.system('roscore &')
         """INISIALISASI NODE REMOTE GUI"""
         rospy.init_node('remote_ui',anonymous=False)
-        os.system('roslaunch turtlebot3_bringup gui_monitor.launch &')
+        #os.system('roslaunch turtlebot3_bringup gui_monitor.launch &')
         #Init ros subscriber
         rospy.Subscriber('items_topic',String,self.callbackPayloadtype)
         rospy.Subscriber('Json_Topic',String,self.callbackJsonTopic)
@@ -430,8 +446,10 @@ class Ui_RemoteUI(object):
         rospy.Subscriber('string_RT',String,self.callbackStringRT)
         rospy.Subscriber('kelar_kirim',Int32,self.callbackKelarKirim)
         rospy.Subscriber('flag_init',Bool,self.callbackFlaginit)
+        rospy.Subscriber('flag_isi',Bool,self.callbackFlagisi)
         #init ros publisher
         self.pubChangeAction=rospy.Publisher('change_action',Int32,queue_size=10)
+        self.pubChangeStop=rospy.Publisher('change_stop',Int32,queue_size=10)
         #if 1 maka navigasi diaktifkan, 0 maka navigasi ingin dihentikan
 
 #MAIN PROGRAM
