@@ -26,4 +26,9 @@ pyuic5 -x your_file.ui -o your_python_file.py
 ## Reference
 [Qt Python](https://pythonbasics.org/qt-designer-python/)
 
+## Install ROS
+Installation of ROS
+
+[ROS WIKI] (http://wiki.ros.org/melodic/Installation/Ubuntu)
+
 
