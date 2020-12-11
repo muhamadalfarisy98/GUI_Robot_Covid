@@ -29,6 +29,6 @@ pyuic5 -x your_file.ui -o your_python_file.py
 ## Install ROS
 Installation of ROS
 
-[ROS WIKI] (http://wiki.ros.org/melodic/Installation/Ubuntu)
+[ROS WIKI](http://wiki.ros.org/melodic/Installation/Ubuntu)
 
 
