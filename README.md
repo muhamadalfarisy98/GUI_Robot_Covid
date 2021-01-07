@@ -22,6 +22,13 @@ cd /usr/lib/x86_64-linux-gnu/qt5/bin/
 ```bash
 pyuic5 -x your_file.ui -o your_python_file.py
 ```
+## How To Use ?
+1. go to LoginFile folder
+2. Run `robotgui.py`
+after that running
+
+3. go to RemoteUi folder
+4. run `remotegui.py`
 
 ## Reference
 [Qt Python](https://pythonbasics.org/qt-designer-python/)
