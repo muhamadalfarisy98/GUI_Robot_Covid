@@ -38,4 +38,35 @@ Installation of ROS
 
 [ROS WIKI](http://wiki.ros.org/melodic/Installation/Ubuntu)
 
+## TurtleBot
+```bash
+https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/#pc-setup
+```
+## OpenCR Setup
+```bash
+https://emanual.robotis.com/docs/en/platform/turtlebot3/opencr_setup/
+```
+## SETUP ROS
+```bash
+awal2:
+1. mkdir catkin_ws
+2. mkdir src
+3. cd.. && catkin_make
+4. clone repos
+```
 
+## CMD SETUP
+```bash
+ROS
+source /opt/ros/noetic/setup.zsh
+source /home/faris/Documents/catkin_ws/devel/setup.zsh
+alias cm="/home/faris/Documents/catkin_ws && catkin_make"
+alias eb='nano ~/.zshrc'
+alias sb='source ~/.zshrc'
+
+export TURTLEBOT3_MODEL=covid
+
+connection
+export ROS_MASTER_URI=localhost
+export ROS_HOSTNAME=localhost`
+```
