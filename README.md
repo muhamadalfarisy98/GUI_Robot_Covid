@@ -1,6 +1,9 @@
 # GUIRobotCovid
 Implementasi GUI PyQt5 dan RosTopic
 
+# Description
+this project is used for Human and Robot interaction, controlling action, Input data system, and support robot conditioning.
+
 ## Installation Libraries
 
 Install PyQt5 and QtDesigner, it should work on Python 2.7 or 3.x series
