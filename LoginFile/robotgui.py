@@ -405,13 +405,13 @@ class Ui_RobotGUI(object):
         """NIATNYA NANTI DIA PUBLISH STATUS STOP DAN TERMINATE"""
         #eksperimen service
         """SEMENTARA DI COMMENT"""
-        rospy.wait_for_service('cancel_task')
-        try:
-            xyz=rospy.ServiceProxy('cancel_task', Trigger)
-            final_val=xyz()
-            print(final_val.success)
-        except rospy.ServiceException as e:
-            print(e)
+        # rospy.wait_for_service('cancel_task')
+        # try:
+        #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
+        #     final_val=xyz()
+        #     print(final_val.success)
+        # except rospy.ServiceException as e:
+        #     print(e)
 
 
         
@@ -615,13 +615,13 @@ class Ui_RobotGUI(object):
         print("Stop action remote")  
         #eksperimen service
         """SEMENTARA DI COMMENT"""
-        rospy.wait_for_service('cancel_task')
-        try:
-            xyz=rospy.ServiceProxy('cancel_task', Trigger)
-            final_val=xyz()
-            print(final_val.success)
-        except rospy.ServiceException as e:
-            print(e)
+        # rospy.wait_for_service('cancel_task')
+        # try:
+        #     xyz=rospy.ServiceProxy('cancel_task', Trigger)
+        #     final_val=xyz()
+        #     print(final_val.success)
+        # except rospy.ServiceException as e:
+        #     print(e)
 
     def addAction(self):
         #SpinBox
