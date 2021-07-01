@@ -2,11 +2,11 @@
 Implementasi GUI PyQt5 dan RosTopic
 
 # Description
-this project is used for Human and Robot interaction, controlling action, Input data system, and support robot conditioning.
+this project is used for **Human and Robot interaction, controlling action, Input data system, and support robot conditioning**.
 
 ## Installation Libraries
 
-Install PyQt5 and QtDesigner, it should work on Python 2.7 or 3.x series
+Install PyQt5 and QtDesigner, it should work on *Python 2.7 or 3.x series*
 
 ```bash
 pip3 install --user pyqt5  
@@ -15,7 +15,8 @@ sudo apt-get install pyqt5-dev-tools
 sudo apt-get install qttools5-dev-tools
 ```
 ## Running QtDesigner
-if you want to re-design using Qt Designer, please do this following configuration steps:
+if you want to re-design using Qt Designer, 
+> please do this following configuration steps:
 ```bash
 cd /usr/lib/x86_64-linux-gnu/qt5/bin/
 ./designer
