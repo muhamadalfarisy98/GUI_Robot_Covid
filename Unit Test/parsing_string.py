@@ -4,10 +4,10 @@ import rospy
 from std_msgs.msg import Int32, Float32, String, Bool
 
 #global
-listTostr1=''
+listTostr1 = ''
 
 def baca():
-    jsonfile_PayloadParam='payload.json'
+    jsonfile_PayloadParam = 'payload.json'
     filename_PayloadParam=os.path.join('/home/faris/Desktop/pyQt/Main_UI',jsonfile_PayloadParam)
     with open(filename_PayloadParam,'r') as f:
         PayloadParam=json.load(f)
